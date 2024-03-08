@@ -1,0 +1,59 @@
+<!--
+ - Created by eugene on 20.09.19.
+ -->
+
+<aura:component description="SurveyAnswersFlow" controller="SurveyAnserwsFlowController">
+    <aura:attribute name="question" type="Survey_Answer__c" access="public"/>
+    <aura:if isTrue="{!v.question.Question_Type__c == 'Radio - Yes or No'}">
+        {!v.question.Question__c}
+        <div class="slds-grid">
+            <lightning:input type="radio"  label="Yes" name="{!v.question.Id}" checked="{!v.question.Answer__c == true+''}" onchange="{!c.change}"/>
+            <lightning:input type="radio" label="No" name="{!v.question.Id}" checked="{!v.question.Answer__c == false+''}" onchange="{!c.change}"/>
+        </div>
+        <br/>
+    </aura:if>
+    <aura:if isTrue="{!v.question.Question_Type__c == 'Picklist - 1 to 5'}">
+        <fieldset class="slds-form-element">
+            <legend class="slds-form-element__legend slds-form-element__label">{!v.question.Question__c}</legend>
+            <div class="slds-form-element__control">
+                <div class="slds-radio_button-group">
+                    <span class="slds-button slds-radio_button">
+                        <input  type="radio" name="{!v.question.Id}" id="{!v.question.Id + '1'}" checked="{!v.question.Answer__c == '1'}" value="1" onclick="{!c.click1}"/>
+                            <label class="slds-radio_button__label" for="{!v.question.Id + '1'}">
+                                <span class="slds-radio_faux">1</span>
+                            </label>
+                    </span>
+
+                    <span class="slds-button slds-radio_button">
+                        <input type="radio" name="{!v.question.Id}" id="{!v.question.Id + '2'}" checked="{!v.question.Answer__c == '2'}" value="2" onclick="{!c.click2}"/>
+                        <label class="slds-radio_button__label" for="{!v.question.Id + '2'}">
+                            <span class="slds-radio_faux">2</span>
+                        </label>
+                    </span>
+
+                    <span class="slds-button slds-radio_button">
+                        <input type="radio" name="{!v.question.Id}" id="{!v.question.Id + '3'}" checked="{!v.question.Answer__c == '3'}" value="3" onclick="{!c.click3}"/>
+                        <label class="slds-radio_button__label" for="{!v.question.Id + '3'}">
+                            <span class="slds-radio_faux">3</span>
+                        </label>
+                    </span>
+
+                    <span class="slds-button slds-radio_button">
+                        <input type="radio" name="{!v.question.Id}" id="{!v.question.Id + '4'}" value="4"  checked="{!v.question.Answer__c == '4'}" onclick="{!c.click4}"/>
+                        <label class="slds-radio_button__label" for="{!v.question.Id + '4'}">
+                            <span class="slds-radio_faux">4</span>
+                        </label>
+                    </span>
+                    <span class="slds-button slds-radio_button">
+                        <input type="radio" name="{!v.question.Id}" id="{!v.question.Id + '5'}" value="5" checked="{!v.question.Answer__c == '5'}" onclick="{!c.click5}"/>
+                        <label class="slds-radio_button__label" for="{!v.question.Id + '5'}">
+                            <span class="slds-radio_faux">5</span>
+                        </label>
+                    </span>
+
+                </div>
+            </div>
+        </fieldset>
+        <br/>
+    </aura:if>
+</aura:component>

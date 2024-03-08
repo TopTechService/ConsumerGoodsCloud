@@ -1,0 +1,35 @@
+<apex:page standardcontroller="Account" extensions="AccountAndProductsController" showHeader="false" sidebar="false">
+  <apex:form >
+      <apex:pageBlock id="prod1">
+          <div style="width:100%;overflow-x:auto">
+              <apex:repeat value="{!ClassificationVsProduct}" var="classification">
+                 <div id="{!classification}" style="width:{!width}%;float:left;overflow:hidden;border:1px solid #ddd">
+                      <div style="width:{!width};position:relative;font-weight:bold;padding:5px;border:1px solid #ddd;height:30px;text-align:center;background-color:#9cc2e5;font-style:italic">
+                          {!classification}  
+                      </div>       
+                      <apex:repeat value="{!ClassificationVsProduct[classification]}" var="product">
+                      <apex:outputpanel onClick="createProductFunc('{!product.Id}')">
+                          <div style="{!IF(prodIdVsProductWrapper[product.id].isPresent = TRUE, 'background-color:#73e5aa', 'background-color:none')};width:{!width};position:relative;padding:5px;border-bottom:1px solid #ddd;height:30px;" >
+                               {!IF(product.SKU_Name__c = NULL, product.Name, product.SKU_Name__c)}
+                          </div>      
+                      </apex:outputpanel> 
+                      </apex:repeat>
+                  </div>
+              </apex:repeat>
+          </div>
+          <apex:outputPanel rendered="{!IF(toReresh = TRUE, TRUE, FALSE)}" id="refreshPanel">
+              <script>
+                  window.top.location='/{!account.id}';
+              </script>
+          </apex:outputPanel>
+      </apex:pageBlock>
+      <apex:actionFunction name="createProduct" action="{!createProduct}" reRender="prod1">
+          <apex:param name="productId" assignTo="{!productId}" value="" />
+      </apex:actionFunction>
+  </apex:form>
+  <script>
+      function createProductFunc(Id){
+          createProduct(Id);   
+      }
+  </script>
+</apex:page>

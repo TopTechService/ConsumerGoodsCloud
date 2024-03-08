@@ -1,0 +1,219 @@
+<apex:page controller="ObjectivePlanningController" contenttype="application/vnd.ms-excel#ObjectiveManagement.xls">
+
+    <H2 style="font-family:Arial;">Objective Management</h2>   
+    
+    <!-- Table for filters & Objective mgmt heading -->
+          
+    <table cellspacing="0" cellpadding="0" style="width:100%;background-color:white;display: table-cell;width:10%;height:30px;">
+         
+         <tr>
+             <td colspan="2">
+                 <table style="width:110px !important;width:660px;margin:0px auto; text-align:center;font-family:Arial;font-weight:bold;background-color:rgb(173,182,212);font-size:12px;" >
+                    <tr>
+                         <td >
+                             <b>Year: <apex:OutputText value="{!selectedYear}"/></b>
+                         </td>
+                         <td>
+                             <b>Banner Group: 
+                                 <apex:repeat value="{!bannerGroups}" var="bGroup">
+                                     <apex:OutputText value="{!bGroup.Label}" rendered="{!if(bGroup.value == selectedBanerGroup, true, false)}"/>
+                                 </apex:repeat>                                  
+                             </b>
+                         </td>
+                         <td>
+                             <b>Owner: 
+                                 <apex:repeat value="{!outlets}" var="outlet" rendered="{!if(selectedOutlet != currentUser.Id, true, false)}">
+                                     <apex:OutputText value="{!outlet.Label}" rendered="{!if(outlet.value == selectedOutlet, true, false)}"/>
+                                 </apex:repeat> 
+                                 <apex:OutputText rendered="{!if(selectedOutlet == currentUser.Id, true, false)}" >
+                                    {!currentUser.FirstName}
+                                    {!currentUser.LastName}
+                                 </apex:OutputText>
+                             </b>
+                         </td>
+                     </tr>
+                     <tr>
+                        <td>
+                             <b>Call Cycle: <apex:OutputText value="{!selectedCallCycle}"/></b>
+                         </td>
+                         <td>
+                             <b>
+                                 Objectives: 
+                                 <apex:repeat value="{!objectives}" var="obj">
+                                     <apex:OutputText value="{!obj.Label}" rendered="{!if(obj.value == selectedObjective, true, false)}"/>
+                                 </apex:repeat> 
+                             </b>
+                         </td>
+                         <td>
+                             <b>Grading: <apex:OutputText value="{!selectedGrading}" /></b>
+                         </td>
+                     </tr>   
+                     <tr>
+                        <td>
+                             <b>Priority/KPI: <apex:OutputText value="{!selectedPriorityKpi}"/></b>
+                         </td>
+                         <td>
+                             <b>Task Status: <apex:OutputText value="{!selectedtaskStatus}"/></b>
+                         </td>
+                         <td></td>
+                     </tr>                                                    
+                 </table>
+             </td>
+         </tr>
+         
+     </table>      
+     <br/>
+     
+     <apex:variable value="{!1}" var="columnCount"/>
+     <apex:outputPanel >
+         <table cellspacing="0" cellpadding="0" style = "font-size:12px;border:2px black solid;width:100%;background-color:white;font-family:Arial;">
+             <thead> 
+                 <tr>
+                     <th style="color:white;background-color:rgb(0,62,126)  !important;font-weight:normal !important;border-left: 1px solid grey;border-bottom: 1px solid black;display: table-cell;height:30px;vertical-align: middle;font-weight:bold !important;text-align:center;">  
+                        <apex:outputText value="Outlet"></apex:outputText>
+                     </th>
+                     <apex:outputText rendered="{!bannerGrpFlag}">
+                         <th style="color:white;background-color:rgb(0,62,126)  !important;font-weight:normal !important;border-left: 1px solid grey;border-bottom: 1px solid black;display: table-cell;height:30px;vertical-align: middle;font-weight:bold !important;text-align:center;"> 
+                              <apex:outputText value="Banner Group"></apex:outputText>
+                         </th>
+                     </apex:outputText>
+                     <apex:outputText rendered="{!cityFlag}">
+                         <th style="color:white;background-color:rgb(0,62,126)  !important;font-weight:normal !important;border-left: 1px solid grey;border-bottom: 1px solid black;display: table-cell;height:30px;vertical-align: middle;font-weight:bold !important;text-align:center;">     
+                            <apex:outputText value="City"></apex:outputText>
+                         </th>
+                     </apex:outputText>
+                     <apex:outputText rendered="{!postCodeFlag}">
+                         <th style="color:white;background-color:rgb(0,62,126)  !important;font-weight:normal !important;border-left: 1px solid grey;border-bottom: 1px solid black;display: table-cell;height:30px;vertical-align: middle;font-weight:bold !important;text-align:center;">     
+                            <apex:outputText value="Post Code"></apex:outputText>
+                         </th>
+                     </apex:outputText>
+                     <apex:outputText rendered="{!volumeFlag}">
+                         <th style="color:white;background-color:rgb(0,62,126)  !important;font-weight:normal !important;border-left: 1px solid grey;border-bottom: 1px solid black;display: table-cell;height:30px;vertical-align: middle;font-weight:bold !important;text-align:center;">     
+                              <apex:outputText value="Volume (9LE - Current Year)"></apex:outputText>
+                         </th>
+                     </apex:outputText> 
+                     <apex:outputText rendered="{!gradingFlag}">
+                         <th style="color:white;background-color:rgb(0,62,126)  !important;font-weight:normal !important;border-left: 1px solid grey;border-bottom: 1px solid black;display: table-cell;height:30px;vertical-align: middle;font-weight:bold !important;text-align:center;">     
+                              <apex:outputText value="Grading"></apex:outputText>
+                         </th>
+                     </apex:outputText>  
+                    
+                     <apex:repeat value="{!sortedObjectivesList}" var="objectiveId">
+                         <th  style ="background-color:rgb(198,12,48);font-weight:normal !important;border-left: 1px solid grey;border-bottom: 1px solid black;display: table-cell;height:30px;vertical-align: middle;font-weight:bold !important;text-align:center;">
+                             <apex:outputText value="{!currentObjectivesMap[objectiveId].Name}"></apex:outputText>
+                         </th>
+                     </apex:repeat>
+                 </tr>
+             </thead> 
+             
+               <tbody>
+                 <apex:repeat value="{!accountsListExcel}" var="acc">
+                     <tr>
+                         <apex:outputText >
+                             <td style="vertical-align:middle;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px; background-color:rgb(173,182,212);">
+                                {!acc.Name}
+                             </td>
+                         </apex:outputText>
+                         <apex:outputText rendered="{!bannerGrpFlag}" >
+                             <td style="vertical-align:middle;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px; background-color:rgb(173,182,212);">
+                                {!acc.Banner_Group_Name__c}
+                             </td>
+                         </apex:outputText> 
+                         <apex:outputText rendered="{!cityFlag}" > 
+                             <td style="vertical-align:middle; background-color:rgb(173,182,212);border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;" > 
+                             {!acc.BillingCity}
+                             </td>
+                         </apex:outputText> 
+                         <apex:outputText rendered="{!postCodeFlag}" > 
+                             <td style="vertical-align:middle; background-color:rgb(173,182,212);border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;" > 
+                             {!acc.BillingPostalCode}
+                             </td>
+                         </apex:outputText> 
+                         <apex:outputText rendered="{!volumeFlag}" > 
+                             <td style="vertical-align:middle; background-color:rgb(173,182,212);border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;" > 
+                             {!acc.Volume__c}
+                             </td>
+                         </apex:outputText> 
+                         <apex:outputText rendered="{!gradingFlag}" >
+                             <td style="vertical-align:middle; background-color:rgb(173,182,212);border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;">
+                                  {!acc.Account_Grading__c}
+                             </td>
+                         </apex:outputText>
+                           <apex:repeat value="{!sortedObjectivesList}" var="objectiveId">
+                             <td style="border: 1px solid #ddd;display: table-cell;width:7%;padding:3px;vertical-align: middle;">
+                                 <ul style="list-style:none;text-align:left;padding:0px;margin-top:10px !important;margin-bottom:0 !important;">
+                                     <apex:repeat value="{!tasksMapExcel[''+acc.Id+'#'+objectiveId]}" var="task">
+                                         <li style="text-align:left !important;padding:0px;margin-left:2px !important;">
+                                             <apex:outputText rendered="{!if(ISNULL(task.Id), false, true)}">
+                                                  <apex:outputText value="{!task.Status}" style="color:{!IF(AND(task.ActivityDate < todaysDate, task.Status != 'Executed'),'red',IF(task.Status == 'Re-Allocated','Green',if(task.Status=='Executed','blue','black')))};"/>
+                                             </apex:outputText>
+                                             <apex:outputText rendered="{!if(ISNULL(task.Id), true, false)}">
+                                                 <apex:outputText value="{!task.Status}"
+                                                  style="color:{!IF(AND(task.ActivityDate < todaysDate, task.Status != 'Executed'),'red',IF(task.Status == 'Re-Allocated','Green',if(task.Status=='Executed','blue','black')))};font-weight:bold;"/>
+                                             </apex:outputText>
+                                         </li>
+                                     </apex:repeat>
+                                 </ul>
+                             </td>
+                         </apex:repeat>
+                     </tr>
+                 </apex:repeat>   
+                 <tr >
+                     <td style="border: 1px solid #ddd !important;display: table-cell;width:7%;padding:3px;vertical-align: top;" colspan="{!FLOOR(columnCount)}">
+                     </td>
+                 </tr>
+                     
+                 <tr>
+                     <apex:outputText rendered="{!bannerGrpFlag}" ><td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"> </td></apex:outputText>
+                     <apex:outputText rendered="{!cityFlag}" ><td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"></td></apex:outputText>
+                     <apex:outputText rendered="{!postCodeFlag}" ><td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"></td></apex:outputText>
+                     <apex:outputText rendered="{!volumeFlag}" ><td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"> </td></apex:outputText>
+                     <apex:outputText rendered="{!gradingFlag}" ><td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"></td></apex:outputText>
+                     <td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;">Total Objectives Assigned</td>
+                      <apex:repeat value="{!sortedObjectivesList}" var="objectiveId">
+                         <td style="height: 30px; border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"> <apex:OutputText value="{!statsMapExcel[objectiveId].Total_Allocation__c}" /></td>
+                     </apex:repeat>
+                 </tr>
+                 
+                 <tr>
+                     <apex:outputText rendered="{!bannerGrpFlag}" ><td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"> </td></apex:outputText>
+                     <apex:outputText rendered="{!cityFlag}" ><td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"></td></apex:outputText>
+                     <apex:outputText rendered="{!postCodeFlag}" ><td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"></td></apex:outputText>
+                     <apex:outputText rendered="{!volumeFlag}" ><td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"> </td></apex:outputText>
+                     <apex:outputText rendered="{!gradingFlag}" ><td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"></td></apex:outputText>
+                     <td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;">Total Objectives Assigned</td>
+                     <apex:repeat value="{!sortedObjectivesList}" var="objectiveId">
+                         <td style="height: 30px; border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"> {!noOfObjAllocReallocPending[objectiveId]}</td>
+                     </apex:repeat>
+                 </tr>
+                 
+                 <tr>
+                     <apex:outputText rendered="{!bannerGrpFlag}" ><td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"> </td></apex:outputText>
+                     <apex:outputText rendered="{!cityFlag}" ><td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"></td></apex:outputText>
+                     <apex:outputText rendered="{!postCodeFlag}" ><td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"></td></apex:outputText>
+                     <apex:outputText rendered="{!volumeFlag}" ><td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"> </td></apex:outputText>
+                     <apex:outputText rendered="{!gradingFlag}" ><td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"></td></apex:outputText>
+                     <td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;">Total Objectives Executed</td>
+                     <apex:repeat value="{!sortedObjectivesList}" var="objectiveId">
+                         <td style="height: 30px; border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"> {!noOfObjExecuted[objectiveId]}</td>
+                     </apex:repeat>
+                 </tr>
+                 
+                 <tr>
+                     <apex:outputText rendered="{!bannerGrpFlag}" ><td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"> </td></apex:outputText>
+                     <apex:outputText rendered="{!cityFlag}" ><td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"></td></apex:outputText>
+                     <apex:outputText rendered="{!postCodeFlag}" ><td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"></td></apex:outputText>
+                     <apex:outputText rendered="{!volumeFlag}" ><td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"> </td></apex:outputText>
+                     <apex:outputText rendered="{!gradingFlag}" ><td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"></td></apex:outputText>
+                     <td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;">Total Objectives Remaining</td>
+                     <apex:repeat value="{!sortedObjectivesList}" var="objectiveId">
+                         <td style="height: 30px; border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"> {!noOfObjRemaining[objectiveId]}</td>
+                     </apex:repeat>
+                 </tr>
+             </tbody>
+         </table>
+          
+     </apex:outputPanel> 
+     <br/>               
+
+</apex:page>

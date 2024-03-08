@@ -1,0 +1,17 @@
+<apex:page standardController="Account">
+
+<script type="text/javascript">
+     function Test(url){
+         var url = '/'+url;
+         window.parent.location.replace(url);
+     }
+</script>
+
+<apex:pageBlock mode="maindetail">
+<apex:pageBlockButtons >
+<apex:outputLink onclick="Test('00O90000009S2oA');" >    
+<analytics:reportChart reportId="00O90000009S2oA" size="medium" filter="[{column:'Account.Id',operator:'equals',value:'{!Account.Id}'}]"
+ cacheResults="false" hideonerror="true" showRefreshButton="false" ></analytics:reportChart>
+</apex:outputlink>
+</apex:pageBlockButtons></apex:pageBlock>
+</apex:page>

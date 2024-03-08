@@ -1,0 +1,2 @@
+<apex:page controller="PDF_Equipment_Movement_Request" action="{! generate }">
+</apex:page>

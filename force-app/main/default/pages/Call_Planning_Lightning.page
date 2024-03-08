@@ -1,0 +1,1941 @@
+<!--
+* @author    : Created by Manish Damle on 12 Apr, 2013  manish.damle@arxxus.com
+* @Purpose   : Call Planning Page for AUS.
+* @Criteria  :
+* @Modified  : 10 Apr, 2013 Modified by Debashish Dinda, debashish.dinda@arxxus.com
+20 Apr, 2013 Modified by Geeta Kushwaha, geeta.kushwaha@arxxus.com
+*-->
+<apex:page sidebar="false" showHeader="true" id="page" controller="CallVisitPlanController"  cache="false" language="{!$CurrentPage.parameters.lang}" lightningStyleSheets="true">
+    <head>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+        <apex:slds />
+    </head> 
+    <apex:includeLightning />
+    <!--Load Javascripts from Google Repo and Static Resources Site-->
+    <apex:stylesheet value="{!$Resource.JQueryUICSS}"/>
+    <script language="javascript" type="text/javascript" src="https://pagination.js.org/dist/2.1.4/pagination.min.js"></script>
+    <apex:includeScript value="{!URLFOR($Resource.jquery, '/jquery/js/jquery.min.2.0.0.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jquery, '/jquery/js/jquery-ui-1.10.2.custom.min.js')}"/>
+    <apex:includeScript value="{!$Resource.slideout}"/>
+        
+    <script type="text/javascript">
+
+        var $j = jQuery.noConflict();
+
+        $j(document).ready(function () {
+            overridePageMessages();
+            if ({!displaySectionFilter})
+            document.getElementById('page:mainBlock:mainForm:FilterSectionId').style.display = 'inline';
+        else
+            document.getElementById('page:mainBlock:mainForm:FilterSectionId').style.display = 'none';
+
+            if ({!displaySectionClone})
+            document.getElementById('page:mainBlock:mainForm:CloneSectionId').style.display = 'inline';
+        else
+            document.getElementById('page:mainBlock:mainForm:CloneSectionId').style.display = 'none';
+        });
+
+        function overridePageMessages() {
+            var textureEffect = '';
+            textureEffect = 'slds-theme--alert-texture';
+
+            $j('.warningM3').addClass('slds-notify slds-notify--toast slds-theme--warning customMessage ' + textureEffect);
+            $j('.confirmM3').addClass('slds-notify slds-notify--alert slds-theme--success  customMessage ' + textureEffect);
+            $j('.errorM3').addClass('slds-notify slds-notify--alert slds-theme--error customMessage ' + textureEffect);
+            $j('.infoM3').addClass('slds-notify slds-notify--toast customMessage ' + textureEffect);
+
+            $j('.warningM3').removeClass('warningM3');
+            $j('.confirmM3').removeClass('confirmM3');
+            $j('.errorM3').removeClass('errorM3 message');
+            $j('.infoM3').removeClass('infoM3');
+        }
+
+
+        //var allEvents = new Account(new Array(new Event()));
+        var allDays = [];
+        var accountIds = [];
+        var weeks = [];
+        var dayOfWeek = [];
+        var addOrRemove = [];
+
+        var gSortBy = 'postCode';
+        var gSortOrder = 'ASC';
+
+        var gFilterBy = 'All';
+
+        function doSave(accountsArray, weeksArray, daysArray) {
+            saveAllEventsAF(JSON.stringify(accountIds), JSON.stringify(weeks), JSON.stringify(dayOfWeek), JSON.stringify(addOrRemove));
+            allDays.length = 0;
+            accountIds.length = 0;
+            weeks.length = 0;
+            dayOfWeek.length = 0;
+            addOrRemove.length = 0;
+        }
+
+        function toggleSectionFilter() {
+            var displayVal = document.getElementById('page:mainBlock:mainForm:FilterSectionId').style.display;
+            if (displayVal == 'none'){
+                displayVal = 'inline';
+                document.getElementById('page:mainBlock:mainForm:CloneSectionId').style.display = 'none';
+            }
+            else
+                displayVal = 'none';
+            document.getElementById('page:mainBlock:mainForm:FilterSectionId').style.display = displayVal;
+        }
+
+        function toggleSectionClone() {
+            var displayVal = document.getElementById('page:mainBlock:mainForm:CloneSectionId').style.display;
+            if (displayVal == 'none'){
+                displayVal = 'inline';
+                document.getElementById('page:mainBlock:mainForm:FilterSectionId').style.display = 'none';
+            }
+            else{
+                displayVal = 'none';
+            }
+
+            document.getElementById('page:mainBlock:mainForm:CloneSectionId').style.display = displayVal;
+        }
+
+        function dayCheckboxClick(_input) {
+            var linkId = _input;
+            var link = linkId.split('-');
+            var dayNum = link[0] - 1;
+            var dayOfTheWeek = link[3].charAt(0);
+            console.log(' dayOfTheWeek   ' + dayOfTheWeek);
+            console.log(' link   ' + link);
+            var checkedOrUnchecked = $j('[id="' + link[1] + link[2] + '"]').find('input')[dayOfTheWeek - 1].checked;
+            var index = allDays.indexOf(dayNum);
+            if (index == -1) {
+                allDays.push(dayNum);
+                accountIds.push(link[1]);
+                weeks.push(link[2]);
+                dayOfWeek.push(link[3]);
+                addOrRemove.push(checkedOrUnchecked);
+            }
+            else {
+                addOrRemove[index] = checkedOrUnchecked;
+            }
+
+            console.log(' allDays   ' + allDays);
+            console.log(' accountIds[]   ' + accountIds[index]);
+            console.log(' addOrRemove[]   ' + addOrRemove[index]);
+            console.log(' checkedOrUnchecked   ' + checkedOrUnchecked);
+            destroyLoadingDialog();
+        }
+
+        function filterTable(val) {
+            //alert(document.getElementById('page:mainBlock:mainForm:FilterById'));
+            console.log("val : " + val);
+            console.log("gFilterBy : " + gFilterBy);
+
+            var table, rows, i, x, y, rowsTemp;
+            table = Array.from(document.querySelectorAll('#PlanningTable')).slice(-2, -1)[0];
+
+            console.log("page:mainBlock:mainForm:FilterById Value : " + document.getElementById('page:mainBlock:mainForm:FilterById').value);
+            console.log("table.rows : " + table.rows);
+
+            gFilterBy = val;
+            filterBy = gFilterBy;
+
+            rowsTemp = table.rows;
+            rows = table.rows;
+
+            let rightRows = document.querySelector('table.right-table').rows;
+
+            console.log("filterBy : " + filterBy);
+            console.log("rowsTemp.length : " + rowsTemp.length);
+
+            if (filterBy == 'All') {
+                for (i = 1; i < (rowsTemp.length - 3); i++) {
+                    rowsTemp[i].style.display = '';
+                    rightRows[i].style.display = '';
+                }
+            }
+            if (filterBy == 'UnPlanned') {
+                col = 79;
+                for (i = 1; i < (rowsTemp.length - 3); i++) {
+                    if (rightRows[i].querySelector('#DaysSortValId').innerHTML == "") {
+                        rowsTemp[i].style.display = '';
+                        rightRows[i].style.display = '';
+                    } else {
+                        rowsTemp[i].style.display = 'none';
+                        rightRows[i].style.display = 'none';
+                    }
+                }
+            }
+            if (filterBy == 'Planned') {
+                col = 79;
+                for (i = 1; i < (rowsTemp.length - 3); i++) {
+                    if (rightRows[i].querySelector('#DaysSortValId').innerHTML == "") {
+                        rowsTemp[i].style.display = 'none';
+                        rightRows[i].style.display = 'none';
+                    } else {
+                        rowsTemp[i].style.display = '';
+                        rightRows[i].style.display = '';
+                    }
+                }
+            }
+        }
+
+        function sortTable(val) {
+            //alert(document.getElementById('page:mainBlock:mainForm:SortOrderId'));
+            console.log(val);
+            console.log(gSortBy);
+            console.log(gSortOrder);
+
+            var table, rows, switching, i, x, y, shouldSwitch, rowsTemp;
+            table = Array.from(document.querySelectorAll('#PlanningTable')).slice(-2, -1)[0];
+            switching = true;
+
+            var rightRows = document.querySelector('.right-table').rows;
+
+            //console.log(document.getElementById('page:mainBlock:mainForm:SortOrderId').value);
+            //console.log(document.querySelector('[name=page:mainBlock:mainForm:SortOrderId][value=DES]').selected);
+            //var e = document.getElementsByClassName('SortOrderClass')[0];
+            //var strUser = e.options[e.selectedIndex].value;
+            //console.log(e.selectedIndex);
+            //console.log(strUser);
+            //console.log(document.getElementById('page:mainBlock:mainForm:SortOrderId').options[document.getElementById('page:mainBlock:mainForm:SortOrderId').selectedIndex].text);
+            if (val == 'ASC' || val == 'DES') {
+                sortBy = gSortBy; //document.getElementById('page:mainBlock:mainForm:SortById').value;
+                gSortOrder = val;
+                sortOrder = gSortOrder;
+            }
+            else {
+                gSortBy = val;
+                sortBy = gSortBy;
+                sortOrder = gSortOrder; //document.getElementById('page:mainBlock:mainForm:SortOrderId').value;
+            }
+            if (sortBy == 'Outlet')
+                col = 0;
+            if (sortBy == 'Grading')
+                col = 1;
+            if (sortBy == 'City')
+                col = 2;
+            if (sortBy == 'postCode')
+                col = 3;
+            if (sortBy == 'Volume')
+                col = 4;
+            if (sortBy == 'VolumeLY')
+                col = 5;
+            if (sortBy == 'days') {
+                col = 79;
+                rowsTemp = table.rows;
+                for (i = 1; i < (rowsTemp.length - 3); i++) {
+                    if (rightRows[i].querySelector('#DaysSortValId').innerHTML == "")
+                        rightRows[i].querySelector('#DaysSortValId').innerHTML = "Z";
+                }
+            }
+
+            /*Make a loop that will continue until
+              no switching has been done:*/
+            while (switching) {
+                //start by saying: no switching is done:
+                switching = false;
+                rows = table.rows;
+                /*Loop through all table rows (except the
+                first, which contains table headers):*/
+                for (i = 1; i < (rows.length - 4); i++) {
+                    //console.log(i);
+                    //start by saying there should be no switching:
+                    shouldSwitch = false;
+                    /*Get the two elements you want to compare,
+                one from current row and one from the next:*/
+                    if (sortBy == 'days') {
+                        x = rightRows[i].querySelector('#DaysSortValId');
+                        y = rightRows[i + 1].querySelector('#DaysSortValId');
+                    } else {
+                        x = rows[i].getElementsByTagName("TD")[col];
+                        y = rows[i + 1].getElementsByTagName("TD")[col];
+                    }
+                    //check if the two rows should switch place:
+                    xInnerHTML = x.innerHTML.toLowerCase();
+                    yInnerHTML = y.innerHTML.toLowerCase();
+                    if (sortBy == 'Volume') {
+                        xInnerHTML = parseFloat(xInnerHTML);
+                        yInnerHTML = parseFloat(yInnerHTML);
+                    }
+                    if (sortBy == 'VolumeLY') {
+                        xInnerHTML = parseFloat(xInnerHTML);
+                        yInnerHTML = parseFloat(yInnerHTML);
+                    }
+                    //console.log(x.innerHTML.toLowerCase());
+                    //if (xInnerHTML == "" || xInnerHTML == null){
+                    //  xInnerHTML = "Z1";
+                    //}
+                    //if (yInnerHTML == "" || yInnerHTML == null){
+                    //  yInnerHTML = "Z2";
+                    //}
+                    if (sortOrder == 'ASC' && xInnerHTML > yInnerHTML) {
+                        //if so, mark as a switch and break the loop:
+                        shouldSwitch = true;
+                        break;
+                    } else if (sortOrder == 'DES' && xInnerHTML < yInnerHTML) {
+                        //if so, mark as a switch and break the loop:
+                        shouldSwitch = true;
+                        break;
+                    }
+                }
+                if (shouldSwitch) {
+                    /*If a switch has been marked, make the switch
+                and mark that a switch has been done:*/
+                    rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                    rightRows[i].parentNode.insertBefore(rightRows[i + 1], rightRows[i]);
+                    switching = true;
+                }
+            }
+        }
+
+        function openLoadingdialog() {
+            //document.getElementById('spinner').classList.remove('slds-hide');
+            //document.getElementById('TopDiv').classList.add('slds-hide');
+
+            document.getElementById('TopDiv').classList.add('disabledeverything');
+
+            $j('.slds-spinner_container').removeClass('slds-hide');
+            $j('.slds-spinner_container').addClass('slds-show');
+            var winWidth = $j(document).width();
+            var winHeight = $j(document).height();
+
+            $j('.slds-spinner_container').css({'width': '0rem', 'height': '0rem',});
+        }
+
+        function destroyLoadingDialog() {
+            document.getElementById('spinner').classList.add('slds-hide');
+            //document.getElementById('TopDiv').classList.remove('slds-hide');
+            document.getElementById('TopDiv').classList.remove('disabledeverything');
+        }
+
+        function openLoadingdialog2() {
+            $j("#loading-message").dialog({
+                draggable: false,
+                resizable: false,
+                closeOnEscape: false,
+                open: function (event, ui) {
+                    $j(".ui-dialog-titlebar-close").hide();
+                    $j(".ui-dialog-titlebar").hide();
+                },
+                modal: true,
+                width: 200,
+                height: 175
+            });
+        }
+
+        function destroyLoadingDialog2() {
+            $j("#loading-message").dialog("close");
+            $j(".ui-dialog-titlebar").show();
+        }
+
+        $j(function () {
+            $j('.slide-out-divcp').tabSlideOut({
+                tabHandle: '.handle',                     //class of the element that will become your tab
+                pathToTabImage: '{!$Resource.HelpIcon}', //path to the image for the tab //Optionally can be set using css
+                imageHeight: '35px',                     //height of tab image           //Optionally can be set using css
+                imageWidth: '25px',                       //width of tab image            //Optionally can be set using css
+                tabLocation: 'left',                      //side of screen where tab lives, top, right, bottom, or left
+                speed: 300,                               //speed of animation
+                action: 'click',                          //options: 'click' or 'hover', action to trigger animation
+                topPos: '159px',                          //position from the top/ use if tabLocation is left or right
+                leftPos: '20px',                          //position from left/ use if tabLocation is bottom or top
+                fixedPosition: false                      //options: true makes it stick(fixed position) on scroll
+            });
+
+        });
+
+        function dayCheckboxEvent(_id) {
+            var linkId = _id;
+            var Id = linkId.split('-');
+            console.log(' Id   ' + Id);
+
+            var link = linkId.split('-');
+            console.log(' link[0]+link[1]   ' + link[0] + link[1]);
+
+
+            var mon = $j('[id="' + link[0] + link[1] + '"]').find('input')[0].checked;
+            var tue = $j('[id="' + link[0] + link[1] + '"]').find('input')[1].checked;
+            var wed = $j('[id="' + link[0] + link[1] + '"]').find('input')[2].checked;
+            var thu = $j('[id="' + link[0] + link[1] + '"]').find('input')[3].checked;
+            var fri = $j('[id="' + link[0] + link[1] + '"]').find('input')[4].checked;
+            var sat = false; //$j('[id="'+ link[0]+link[1] + '"]').find('input')[5].checked;
+            var sun = false; //$j('[id="'+ link[0]+link[1] + '"]').find('input')[6].checked;
+
+            addTempEvent(link[0], link[1], mon, tue, wed, thu, fri, sat, sun, '');
+            clearEventDetails();
+        }
+
+        function addEvent(_id, buttonId) {
+
+            $j(function () {
+                $j('[id="' + buttonId + '"]').parent().closest('td').find('a').each(function () {
+                    var hyperText = $j(this).text();
+                    if (hyperText == '{!$Label.mon}') {
+                        document.getElementById('{!$Component.mainblock.mainform.mon}').checked = true;
+                    }
+                    else if (hyperText == '{!$Label.tue}') {
+                        document.getElementById('{!$Component.mainblock.mainform.tue}').checked = true;
+                    }
+                    else if (hyperText == '{!$Label.wed}') {
+                        document.getElementById('{!$Component.mainblock.mainform.wed}').checked = true;
+                    }
+                    else if (hyperText == '{!$Label.thu}') {
+                        document.getElementById('{!$Component.mainblock.mainform.thu}').checked = true;
+                    }
+                    else if (hyperText == '{!$Label.fri}') {
+                        document.getElementById('{!$Component.mainblock.mainform.fri}').checked = true;
+                    }
+                    else if (hyperText == '{!$Label.sat}') {
+                        document.getElementById('{!$Component.mainblock.mainform.sat}').checked = true;
+                    }
+                    else if (hyperText == '{!$Label.sun}') {
+                        document.getElementById('{!$Component.mainblock.mainform.sun}').checked = true;
+                    }
+                });
+            });
+            var linkId = _id;
+            var Id = linkId.split('-');
+            console.log(' Id   ' + Id);
+            /*Send Ajax Call to controller and create event. Calls saveevent function*/
+            $j("#createEventDialog").dialog({
+                open: function (event, ui) {
+                    $j(".ui-dialog-titlebar-close").hide();
+                },
+                modal: true,
+                width: <apex:outputText rendered="{!if(userLocation=='australia', true, false)}" value="380"/>,
+                buttons
+        :
+            [
+                {
+                    text: "{!$Label.ok}",
+                    click: function () {
+                        $j(this).dialog('close');
+                        openLoadingdialog();
+                        var mon = document.getElementById('{!$Component.mainblock.mainform.mon}').checked;
+                        var tue = document.getElementById('{!$Component.mainblock.mainform.tue}').checked;
+                        var wed = document.getElementById('{!$Component.mainblock.mainform.wed}').checked;
+                        var thu = document.getElementById('{!$Component.mainblock.mainform.thu}').checked;
+                        var fri = document.getElementById('{!$Component.mainblock.mainform.fri}').checked;
+                        var sat = sun = false;
+                        if (document.getElementById('{!$Component.mainblock.mainform.sat}'))
+                            sat = document.getElementById('{!$Component.mainblock.mainform.sat}').checked;
+                        if (document.getElementById('{!$Component.mainblock.mainform.sun}'))
+                            sun = document.getElementById('{!$Component.mainblock.mainform.sun}').checked;
+                        var link = linkId.split('-');
+                        addTempEvent(link[0], link[1], mon, tue, wed, thu, fri, sat, sun, document.getElementById('EventDescription').value);
+                        clearEventDetails();
+                    },
+                }, {
+                text: "{!$Label.cancel}",
+                click: function () {
+                    $j(this).dialog('close');
+                    clearEventDetails();
+                },
+            }
+            ]
+        })
+            ;
+        }
+
+
+        function confirmAddDel(showDialog) {
+            if (showDialog) {
+                var result = confirm('Few Events have been added/deleted. Click OK to discard changes and Cancel to save.');
+                openLoadingdialog();
+                setClear(result);
+
+            }
+            return true;
+
+        }
+
+
+        function confirmDelete(weekName) {
+            var result = confirm('Do you want to delete all the incomplete Call Visit Events?');
+            if (result) {
+                openLoadingdialog();
+                setDeleteConfirm(result, weekName);
+
+            }
+
+        }
+
+    </script>
+
+    <style>
+        .slds-scope .slds-page-header {
+            padding: 1rem 1rem !important;
+            border-bottom: 1px solid rgb(221, 219, 218) !important;
+            border-radius: .25rem !important;
+            background: rgb(243, 242, 242) !important;
+            background-clip: padding-box !important;
+            box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.10) !important;
+            border: 1px solid rgb(221, 219, 218) !important;
+        }
+
+        .slide-out-divcp {
+            padding: 10px;
+            width: 315px;
+            background: rgb(243, 242, 242);
+            border: 1px solid rgb(221, 219, 218);
+            height: 180px !important;
+        }
+
+        .slide-out-divcp a {
+            border: 1px solid rgb(221, 219, 218);
+            border-radius: 5px;
+        }
+
+        .PlanningTablebtn {
+            background: white !important;
+        }
+
+        .iconButton {
+            padding: 0px !important;
+            height: 16px;
+            width: 16px;
+            border: 0px !important;
+            background-color: white !important;
+        }
+
+        .ui-dialog-titlebar {
+            background-color: rgb(0, 62, 126) !important;
+            background-image: none;
+            color: #000;
+        }
+
+        .ui-dialog, .ui-dialog-title {
+            color: white;
+        }
+
+        .ui-state-default, .ui-widget-content .ui-state-default, .ui-widget-header .ui-state-default {
+            background-color: white !important;
+        }
+
+        body {
+            background-color: white;
+            font-family: "Arial";
+        }
+
+        ul {
+            list-style: none;
+            text-align: left;
+            padding: 0px;
+            margin-top: 10px !important;
+            margin-bottom: 0 !important;
+        }
+
+        ul li {
+            text-align: left !important;
+            padding: 0px;
+            margin-left: 2px !important;
+        }
+
+        th {
+            font-weight: normal !important;
+        }
+
+        .tdHeaderLabel a:hover {
+            color: White !important;
+        }
+
+        table {
+            width: 100%;
+        / / background-color: white;
+        }
+
+        #filterTable td {
+            display: table-cell;
+            width: 10%;
+            height: 30px;
+        }
+
+        body .bPageBlock, body #bodyCell .bResource .secondaryPalette, body .secondaryPalette.bPageBlock, body .individualPalette .secondaryPalette.bPageBlock, body .bodyDiv .genericTable, body .genericPageBlockTable, body .bodyDiv .bSubBlock, body .bComponentBlock .bPageBlock, body .bMyDashboard .bPageBlock, body.rlHoverFrame .bPageBlock, body.subjectSelectionPopup div.choicesBox, body.lookupTab .secondaryPalette.bPageBlock, body.popupTab .secondaryPalette.bPageBlock, body.UserTagStatsPage .secondaryPalette.bPageBlock {
+            background-color: white;
+            border-bottom: 1px solid #EAEAEA;
+            border-left: 1px solid #EAEAEA;
+            border-radius: 4px 4px 4px 4px;
+            border-right: 1px solid #EAEAEA;
+        }
+
+        #PlanningTable td {
+            border-top: 1px solid #ddd;
+            display: table-cell;
+            font-size: 1em;
+            width: 7%;
+            height: 69px;
+            padding: 0px;
+            vertical-align: top;
+        }
+
+        #PlanningTable th {
+            padding: 0px;
+        }
+
+        #PlanningTable td div:hover {
+            cursor: pointer;
+        }
+
+        #PlanningTable .PTheaderColumn {
+            border-left: 1px solid grey;
+            border-bottom: 1px solid black;
+            display: table-cell;
+            height: 30px;
+            background-color: #003e7e;
+            font-size: 12px;
+            vertical-align: middle;
+            font-weight: bold !important;
+            text-align: center;
+        }
+
+        .tableFloatingHeader {
+            z-index: 100;
+            border-left: 1px solid #ddd;
+
+        }
+
+        #WeekTable table {
+            border: none;
+            border-collapse: collapse;
+            margin: 100px auto;
+        }
+
+        #ulRemoveDefaults ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        #WeekTable td {
+            border: none;
+            height: 20px;
+            display: table-cell;
+            font-size: 1em;
+            vertical-align: top;
+            padding: 0px;
+            padding-left: 3px;
+        }
+
+        #WeekTable tr {
+            border: none;
+        }
+
+        #totalCallsRow td {
+            height: 30px;
+            border-left: 1px solid #ddd;
+            border-top: 1px solid #ddd;
+            width: 7%;
+            padding: 3px;
+            font-size: 12px;
+        }
+
+        .completedEvent {
+            color: red !important;
+        }
+
+        #innerFilterTable td {
+            width: 110px !important;
+        }
+
+        .allBorder {
+            border: 1px black solid;
+        }
+
+        body .bPageBlock, body #bodyCell .bResource .secondaryPalette, body .secondaryPalette.bPageBlock, body .individualPalette .secondaryPalette.bPageBlock, body .bodyDiv .genericTable, body .genericPageBlockTable, body .bodyDiv .bSubBlock, body .bComponentBlock .bPageBlock, body .bMyDashboard .bPageBlock, body.rlHoverFrame .bPageBlock, body.subjectSelectionPopup div.choicesBox, body.lookupTab .secondaryPalette.bPageBlock, body.popupTab .secondaryPalette.bPageBlock, body.UserTagStatsPage .secondaryPalette.bPageBlock {
+            border-bottom: 1px solid #EAEAEA;
+            border-left: 1px solid #EAEAEA;
+            border-radius: 4px 4px 4px 4px;
+            border-right: 1px solid #EAEAEA;
+            border-color: none;
+        }
+
+        /*Change Dialog Header Color*/
+        .ui-widget-header {
+            background-color: #CDE8F0;
+        }
+
+        /*Light Blue Color table Data*/
+        .tdData {
+            background-color: rgb(173, 182, 212);
+        / / border: 1 px black solid;
+        }
+
+        /*Change Jquery Buttons Color*/
+        .ui-state-default, .ui-widget-content .ui-state-default, .ui-widget-header .ui-state-default {
+            background-color: #CDE8F0;
+        }
+
+        /*Dark Header Color (Sort)*/
+        .tdHeaderLabel {
+            background-color: rgb(0, 62, 126) !important;
+        }
+
+        /*Sot Link Color*/
+        .tdHeaderLabel a {
+            color: white;
+        }
+
+        .B_Edit {
+            padding: 0px !important;
+            height: 18px;
+            width: 18px;
+            border: 0px !important;
+            float: right;
+            background: none repeat scroll 0 0 transparent !important;
+        }
+
+        .msgIcon {
+            display: none !important;
+        }
+
+        /*.customMessage * {
+        //color: #ff0000!important;
+        //font-style: normal;
+        //font-weight: bold;
+        //font-size: 15px;
+        }*/
+        .customMessage {
+            margin: 5px 0 !important;
+            max-width: 1280px;
+            opacity: 1 !important;
+            width: 100%;
+            font-size: 12px;
+            border: 0px;
+            padding-left: 10px;
+            background-color: rgb(194, 57, 52) !important;
+        }
+
+        .message {
+            opacity: .1;
+            background-color: rgb(194, 57, 52) !important;
+        }
+
+        .messageCell {
+            text-align: center !important;
+        }
+
+        .disabledeverything {
+            pointer-events: none;
+            opacity: 0.4;
+        }
+
+        .slds-coordinates {
+            display: none !important;
+        }
+
+        .slds-map_container {
+            height: 50vh;
+        }
+
+        .messageText {
+            color: white !important;
+        }
+
+        .messageText h4 {
+            color: white !important;
+        }
+    </style>
+
+    <div class="slds-scope">
+
+        <apex:pageBlock id="mainBlock">
+            <apex:form id="mainForm" rendered="{!countryFound}">
+
+                <apex:actionFunction name="saveAllEventsAF" action="{!saveAllEvents}" rerender="PlanningGrid,totalCallsRowPanel,error" oncomplete="overridePageMessages();filterTable($j('[id$=FilterById]').val());sortTable($j('[id$=SortById]').val());destroyLoadingDialog();">
+                    <apex:param id="accountsArrayId" name="accountsArray" value=""/>
+                    <apex:param id="weeksArrayId" name="weeksArray" value=""/>
+                    <apex:param id="daysArrayId" name="daysArray" value=""/>
+                    <apex:param id="addOrRemoveArrayId" name="addOrRemoveArray" value=""/>
+                </apex:actionFunction>
+
+                <apex:actionFunction name="search" action="{!searchAccounts}" rerender="PlanningGrid,totalCallsRowPanel,error" oncomplete="destroyLoadingDialog();return confirmAddDel({!EventAddedDeleted});"/>
+
+                <apex:actionFunction name="addTempEvent" rerender="PlanningGrid,error" action="{!addTempEvent}" oncomplete="destroyLoadingDialog()">
+
+                    <apex:param name="accId" value="" assignTo="{!accId}"/>
+
+                    <apex:param name="weekName" value="" assignTo="{!weekName}"/>
+
+                    <apex:param name="Mon" value="" assignTo="{!daysCheckBoxList[0]}"/>
+
+                    <apex:param name="Tue" value="" assignTo="{!daysCheckBoxList[1]}"/>
+
+                    <apex:param name="Wed" value="" assignTo="{!daysCheckBoxList[2]}"/>
+
+                    <apex:param name="Thu" value="" assignTo="{!daysCheckBoxList[3]}"/>
+
+                    <apex:param name="Fri" value="" assignTo="{!daysCheckBoxList[4]}"/>
+
+                    <apex:param name="Sat" value="" assignTo="{!daysCheckBoxList[5]}"/>
+
+                    <apex:param name="Sun" value="" assignTo="{!daysCheckBoxList[6]}"/>
+
+                    <apex:param name="EventDescription" value="" assignTo="{!EventDescription}"/>
+
+                </apex:actionFunction>
+
+                <apex:actionFunction name="setClear" action="{!searchAccounts}" rerender="PlanningGrid,error,totalCallsRowPanel" oncomplete="destroyLoadingDialog();">
+
+                    <apex:param name="clearVal" value="" assignTo="{!clear}"/>
+
+                </apex:actionFunction>
+
+                <apex:actionFunction name="setDeleteConfirm" action="{!removeAllEvents}" rerender="PlanningGrid,error,totalCallsRowPanel" oncomplete="destroyLoadingDialog();">
+
+                    <apex:param name="clearVal" value="" assignTo="{!clear}"/>
+
+                    <apex:param name="weekName" value="" assignTo="{!weekName}"/>
+
+                </apex:actionFunction>
+
+                <apex:actionFunction name="executeSortByAF" action="{!executeSortBy}" rerender="PlanningGrid,error,totalCallsRowPanel" oncomplete="destroyLoadingDialog();">
+                    <apex:param name="sortbyVal" value="" assignTo="{!selectedSortBy}"/>
+                </apex:actionFunction>
+
+                <apex:actionFunction name="saveSortByAF" action="{!saveSortBy}">
+                    <apex:param name="sortbyVal" value="" assignTo="{!selectedSortBy}"/>
+                </apex:actionFunction>
+
+
+                <apex:actionFunction name="executeSortOrderAF" action="{!executeSortOrder}" rerender="PlanningGrid,error,totalCallsRowPanel" oncomplete="destroyLoadingDialog();">
+                    <apex:param name="sortorderVal" value="" assignTo="{!selectedSortOrder}"/>
+                </apex:actionFunction>
+
+                <apex:actionFunction name="recalculateCallCycles" action="{!recalculateCallCycles}" rerender="CallCycleFilter,error"/>
+
+                <apex:actionFunction name="recalculateWeek" action="{!recalculateWeek}" rerender="WeekFilter,error" oncomplete="destroyLoadingDialog();"/>
+
+                <apex:actionFunction name="recalculateSourceCallCycles" action="{!recalculateSourceCallCycles}" rerender="sourceCallCycle,error"/>
+
+                <apex:actionFunction name="recalculateDestinationCallCycles" action="{!recalculateDestinationCallCycles}" rerender="destinationCallCycle,error"/>
+
+			    <!-- <apex:actionFunction name="saveLoadFromTemplate" action="{!saveLoadFromTemplate}" rerender="PlanningGrid,load-template-modal,pageMessage"/> -->
+
+                <!-- <apex:actionFunction name="saveCallCycleTemplate" action="{!saveCallCycleTemplate}" rerender="PlanningGrid,save-template-modal,save-confirmation-template-modal,pageMessage"/> -->
+
+                <!-- <apex:actionFunction name="saveSwapWeeks" action="{!saveSwapWeeks}" rerender="PlanningGrid,swap-template-modal,pageMessage"/> -->
+
+                <!-- <apex:actionFunction name="saveSwapDays" action="{!saveSwapDays}" rerender="PlanningGrid,swap-days-template-modal,pageMessage"/> -->
+
+                <!-- <apex:actionFunction name="saveSwapWeeks" action="{!saveSwapWeeks}" rerender="PlanningGrid,weeks-template-modal,renderModal,pageMessage"/> -->
+
+				<div class="slds-m-top--medium slds-grid slds-m-bottom--medium slds-grid--align-center">
+					<apex:pageMessages id="pageMessage"/>  
+				</div>
+
+                <!-- SPINNER -->
+                <div id="spinner" class="slds-spinner_container slds-is-static slds-hide ">
+                    <div role="status" class="slds-spinner slds-spinner--large slds-spinner--brand">
+                        <div class="slds-spinner__dot-a"></div>
+                        <div class="slds-spinner__dot-b"></div>
+                    </div>
+                </div>
+
+                <!-- / SPINNER -->
+                <div id="TopDiv">
+                    <div class="slds-page-header slds-grid">
+                        <div class="slds-page-header__row  slds-col">
+                            <div class="slds-page-header__col-title">
+                                <div class="slds-media">
+                                    <div class="slds-media__figure">
+                                        <span class="slds-icon_container slds-icon-standard-opportunity" title="opportunity">
+                                            <svg class="slds-icon slds-page-header__icon" aria-hidden="true">
+                                                <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.SLDS274, 'icons/standard-sprite/svg/symbols.svg#opportunity')}"/>
+                                            </svg>
+                                            <span class="slds-assistive-text">Call Planning</span>
+                                        </span>
+                                    </div>
+                                    <div class="slds-media__body">
+                                        <div class="slds-page-header__name">
+                                            <div class="slds-page-header__name-title">
+                                                <h1>
+                                                    <span class="slds-page-header__title slds-truncate" title="Call Planning">Call Planning</span>
+                                                </h1>
+                                            </div>
+                                        </div>
+                                        <!--<p class="slds-page-header__name-meta">Call Planning</p>-->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div align="center" class="slds-col">
+                            <!--<b>Outlet Name:&nbsp;</b>-->
+                            <apex:inputText html-placeholder="Search Outlet, Banner Group, City, Postcode" value="{!searchOutlet}" id="searchOutlet" size="40"/>
+                            <apex:commandButton value="  Search  " action="{!searchAccounts}" rerender="PlanningGrid,totalCallsRowPanel,error" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();" styleClass="slds-button slds-button_neutral"/>
+                        </div>
+                       
+                        
+                        <div class="slds-col" align="right">
+                            <div class="slds-button-group" role="group">
+                                <div class="slds-col slds-no-flex slds-grid slds-align-top">
+                                    <apex:outputPanel >
+                                        <apex:commandButton value="{!$Label.save}" onclick="openLoadingdialog();doSave(); return false;" rerender="PlanningGrid,totalCallsRowPanel,error" styleClass="slds-button slds-button_neutral"/>
+                                        <apex:commandButton value="{!$Label.cancel}" action="{!cancel}" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();" rerender="PlanningGrid,totalCallsRowPanel,error" styleClass="slds-button slds-button_neutral"/>
+                    					<apex:commandButton value="Swap 2 Days" onclick="openLoadingdialog();" oncomplete="openSwapDaysModal();destroyLoadingDialog();" rerender="PlanningGrid,error" styleClass="slds-button slds-button_neutral"/>
+                                        <apex:commandButton value="Swap 2 Weeks" onclick="openLoadingdialog();" oncomplete="openSwapWeeksModal();destroyLoadingDialog();" rerender="PlanningGrid,error" styleClass="slds-button slds-button_neutral"/>
+                                        <!--<apex:commandButton value="{!$Label.filter}" onclick="toggleSectionFilter();return false;" styleClass="slds-button slds-button_neutral"/>-->
+                                        <apex:commandButton value="Save to Template" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();openSaveTemplateModal();" rerender="PlanningGrid,error" styleClass="slds-button slds-button_neutral"/>
+										<apex:commandButton value="Load from Template" onclick="openLoadingdialog();" oncomplete="openLoadTemplateModal();destroyLoadingDialog();" rerender="PlanningGrid,error" styleClass="slds-button slds-button_neutral"/>
+                                    </apex:outputPanel>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <table cellspacing="0" cellpadding="0" id="filterTable">
+
+                        <apex:outputPanel id="FilterSectionId">
+                            <apex:outputText rendered="{!if(userLocation=='australia' && displaySectionFilter, true, false)}">
+
+                                <div class="slds-box slds-box_xx-small">
+                                    <div class="slds-grid">
+                                        <div class="slds-page-header__detail-block">
+                                            <p class="slds-text-title slds-truncate slds-m-bottom_xx-small" title="Called On">Called On</p>
+                                            <p class="slds-text-body_regular slds-truncate slds-m-bottom_xx-small" title="Called On">
+                                                <apex:inputCheckbox value="{!isCalledOnCheck}"/>
+                                            </p>
+                                        </div>
+                                        <div class="slds-page-header__detail-block-small">
+                                            <p class="slds-text-title slds-truncate slds-m-bottom_xx-small" title="Year">Year</p>
+                                            <p class="slds-text-body_regular slds-truncate slds-m-bottom_xx-small" title="Year">
+                                                <apex:selectList value="{!selectedYear}" multiselect="false" size="1" id="YearFilter" onchange="openLoadingdialog();recalculateCallCycles();recalculateWeek();">
+                                                    <apex:selectOptions value="{!years}"/>
+                                                </apex:selectList>
+                                            </p>
+                                        </div>
+                                        <div class="slds-page-header__detail-block">
+                                            <p class="slds-text-title slds-truncate slds-m-bottom_xx-small" title="Call Cycle">Call Cycle</p>
+                                            <p class="slds-text-body_regular slds-truncate slds-m-bottom_xx-small" title="Call Cycle">
+                                                <!--<apex:selectList value="{!selectedCallCycle}" multiselect="false" size="1" id="CallCycleFilter" onchange="openLoadingdialog();recalculateWeek();">-->
+                                                <apex:selectList value="{!selectedCallCycle}" multiselect="false" size="1" id="CallCycleFilter" onchange="openLoadingdialog();recalculateWeek();">
+                                                    <apex:selectOptions value="{!callCycles}"/>
+                                                </apex:selectList>
+                                            </p>
+                                        </div>
+                                        <div class="slds-page-header__detail-block-small">
+                                            <p class="slds-text-title slds-truncate slds-m-bottom_xx-small" title="Status">Status</p>
+                                            <p class="slds-text-body_regular slds-truncate slds-m-bottom_xx-small" title="Status">
+                                                <apex:selectList value="{!selectedEventStatus}" multiselect="false" size="1" id="EventStatusfilter">
+                                                    <apex:selectOptions value="{!EventStatus}"/>
+                                                </apex:selectList>
+                                            </p>
+                                        </div>
+                                        <div class="slds-page-header__detail-block">
+                                            <p class="slds-text-title slds-truncate slds-m-bottom_xx-small" title="Owner">Account Owner</p>
+                                            <p class="slds-text-body_regular slds-truncate slds-m-bottom_xx-small" title="Owner">
+                                                <apex:selectList value="{!selectedOutlet}" multiselect="false" size="1" id="OuletFilter">
+                                                    <apex:selectOptions value="{!outlets}"/>
+                                                </apex:selectList>
+                                            </p>
+                                        </div>
+                                        <div class="slds-page-header__detail-block-small">
+                                            <p class="slds-text-title slds-truncate slds-m-bottom_xx-small" title="Grading">Grading</p>
+                                            <p class="slds-text-body_regular slds-truncate slds-m-bottom_xx-small" title="Grading">
+                                                <apex:selectList value="{!selectedGrading}" multiselect="false" size="1" id="Grading">
+                                                    <apex:selectOptions value="{!gradings}"/>
+                                                </apex:selectList>
+                                            </p>
+                                        </div>
+                                        <div class="slds-page-header__detail-block slds-col_bump-right">
+                                            <p class="slds-text-title slds-truncate slds-m-bottom_xx-small" title="Outlets per Page">Outlets per Page</p>
+                                            <p class="slds-text-body_regular slds-truncate slds-m-bottom_xx-small" title="Outlets per Page">
+                                                <!--<apex:selectList value="{!recordsPerPage}" multiselect="false" size="1" onchange="openLoadingdialog();search();">-->
+                                                <apex:selectList value="{!recordsPerPage}" multiselect="false" size="1">
+                                                    <apex:selectOptions value="{!numberOfOutlets}"/>
+                                                </apex:selectList>
+                                            </p>
+                                        </div>
+                                        
+                                        <div class="slds-align_absolute-center">
+                                            <apex:commandButton value="{!$Label.refresh}" action="{!refreshAccounts}" rerender="PlanningGrid,totalCallsRowPanel,error,mapScript" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();return confirmAddDel({!EventAddedDeleted});"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </apex:outputText>
+                        </apex:outputPanel>
+
+                    </table>
+                    <table id="innerFilterTable" style="width:70%;margin:0px auto;">
+                        <tr>
+                            <td>
+                                &nbsp;
+                            </td>
+                        </tr>
+                    </table>
+
+                    <br/>
+                    <div style="width:700px;margin:0px auto;">
+                        <apex:pageMessages id="error"/>
+                    </div>
+                    <apex:variable value="{!1}" var="columnCount"/>
+                    <apex:outputPanel id="PlanningGrid" style="position: relative">
+                        <style>
+                            .fixed-header {
+                                overflow: hidden;
+                            }
+
+                            .fixed-header table th:last-of-type {
+                                border-right: 1px solid #ddd;
+                            }
+
+                            .fixed-header .right-header {
+                                z-index: -1;
+                            }
+
+                            .fixed-header .right-header table {
+                                position: absolute;
+                            }
+
+                            .fixed-header .right-header table thead tr {
+                                display: block;
+                            }
+                        </style>
+                        <div class="fixed-header" style="position: fixed; top: 0; width: calc(100% - 32px); left: 17px; z-index: 9; border-left: 1px solid #ddd">
+                            <div class="slds-grid">
+                                <div class="slds-col left-header" style="flex: 0; min-width: 479px;">
+                                </div>
+                                <div class="slds-col right-header" style="position: relative;"></div>
+                            </div>
+                        </div>
+                        <div class="slds-grid PlanningTableContainer">
+                            <div class="slds-col" style="flex: 0; min-width: 480px; width: 480px">
+                                <table cellspacing="0" cellpadding="0" id="PlanningTable" class="left-table slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered" style="border-left: 1px solid rgb(221, 219, 218); border-right: 1px solid rgb(221, 219, 218);">
+                                    <thead>
+                                        <tr class="slds-line-height_reset">
+                                            <th id="outlet" class="slds-text-title_caps" scope="col" style="line-height: 32px; width: 478px;">
+
+                                                <div style='display: flex; flex-direction: row; justify-content: space-between;'>
+                                                    <div style="font-weight:bold; padding-left:10px;height:32px;" class="slds-truncate">
+                                                        DISPLAY &nbsp;
+                                                        <apex:selectList value="{!selectedFilterBy}" multiselect="false" size="1" id="FilterById" onChange="filterTable(this.value);">
+                                                            <apex:selectOptions value="{!filterby}"/>
+                                                        </apex:selectList>
+
+                                                    </div>
+
+                                                    <div style="font-weight:bold;height:32px;" class="slds-truncate">
+                                                        SORT BY &nbsp;
+                                                        <apex:selectList value="{!selectedSortBy}" multiselect="false" size="1" id="SortById" onChange="sortTable(this.value);">
+                                                            <apex:selectOptions value="{!sortby}"/>
+                                                        </apex:selectList>
+                                                        <apex:selectList value="{!selectedSortOrder}" multiselect="false" size="1" styleclass="SortOrderClass" id="SortOrderId" onChange="sortTable(this.value);">
+                                                            <apex:selectOption itemValue="ASC" itemLabel="ASC"/>
+                                                            <apex:selectOption itemValue="DES" itemLabel="DES"/>
+                                                        </apex:selectList>
+                                                    </div>
+                                                </div>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <apex:repeat value="{!accounts}" var="acc">
+                                            <tr style="height: 69px;">
+                                                <td style="display:none;">
+                                                    {!acc.Name}
+                                                    </td>
+                                                    <!-- Hidden but important to Filter -->
+                                                    <td style="display:none;">
+                                                    {!if(acc.Account_Grading__c!='', acc.Account_Grading__c, 'Z')}
+                                                    </td>
+                                                    <td style="display:none;">
+                                                    {!acc.BillingCity}
+                                                    </td>
+                                                    <td style="display:none;">
+                                                    {!acc.BillingPostalCode}
+                                                    </td>
+                                                    <td style="display:none;">
+                                                    {!acc.Volume__c}
+                                                    </td>
+                                                    <td style="display:none;">
+                                                    <!--<apex:outputText value="{!acc.Volume_9LE_LY__c}" />-->
+                                                    {!acc.Volume_9LE_LY__c}
+                                                    </td>
+                                                <td class="slds-truncate" style="max-width: 478px">
+                                                    <div>
+                                                        <div style="width: 50%; display: inline-block; margin-left: 10px; font-weight: bold;">
+                                                            <a href="/{!acc.Id}" styleClass="outletNameLink" style="word-wrap: break-word; white-space: normal;" title="{!acc.Name}">{!acc.Name}</a>
+                                                            &nbsp;
+                                                            <apex:outputText rendered="{!if( acc.Account_Grading__c!='', true, false)}">
+                                                                [{!acc.Account_Grading__c}]
+                                                            </apex:outputText>
+                                                        </div>
+                                                        <div style="width: 50%; display: inline-block; text-align: right; vertical-align: top; position: relative; right: 20px">
+                                                            {!acc.BillingCity}
+                                                            &nbsp;-
+                                                            {!acc.BillingPostalCode}
+                                                        </div>
+                                                    </div>
+
+                                                    <div>
+                                                        <div style="float:left;vertical-align:top;margin-top:0;width:50%;padding-left:10px">
+                                                            {!acc.Banner_Group_Name__c}
+                                                        </div>
+                                                        <div style="float:right;vertical-align:top;margin-top:0;width:50%;text-align:right;padding-right:10px;">
+                                                            <span style="color:grey">Volume 9LE :</span>
+                                                            {!acc.Volume__c}
+                                                            <apex:outputText value="{0, number, ###,##0.##}">
+                                                                <span style="color:grey"> - LY :</span>
+                                                                <apex:param value="{!acc.Volume_9LE_LY__c}"/>
+                                                            </apex:outputText>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </apex:repeat>
+                                        <tr>
+                                            <td style="height: auto">
+                                                &nbsp;
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="height: 30px;">Total Number of Calls</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="height: 30px;">Total per Week</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="slds-col right-table-container fixed-scrollbar" style="flex: 1; min-width: calc(100% - 480px); overflow: auto">
+                                <table cellspacing="0" cellpadding="0" id="PlanningTable" class="right-table slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered" style="border-right: 1px solid rgb(221, 219, 218);">
+                                    <thead>
+                                        <tr class="slds-line-height_reset" style="height: 32px">
+                                            <apex:outputText rendered="{!if(selectedWeek == 'All',true, false)}">
+                                                <apex:repeat value="{!weeksHeader}" var="weekNumber">
+                                                    <th id="{!weekNumber}" class="slds-text-title_caps" scope="col">
+                                                        <div style="float:right;vertical-align:top;margin-top:0;padding-right:3px;padding-top:8px;">
+                                                            <img src="{!$Resource.DeleteTaskIcon}" onclick="confirmDelete('{!weekNumber}');" class="iconButton PlanningTablebtn"/>
+                                                        </div>
+                                                        <div style="text-align:left;margin-top:0;width:100px;padding:8px;" class="wordwrap">
+                                                            {!weekNumber}
+                                                        </div>
+                                                    </th>
+                                                    <apex:variable var="columnCount" value="{!columnCount + 1}"/>
+                                                </apex:repeat>
+                                            </apex:outputText>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <apex:variable value="{!0}" var="dayCounter"/>
+                                        <apex:repeat value="{!accounts}" var="acc">
+                                            <tr class="slds-hint-parent">
+                                                <!-- Plot the Event data -->
+                                                <apex:variable var="DaysSortVal" value=""/>
+                                                <!-- Plot the Event data for All Weeks-->
+                                                <apex:outputText rendered="{!if(selectedWeek == 'All',true, false)}">
+                                                    <apex:repeat value="{!weeksHeader}" var="weekName">
+                                                        <td class="slds-no-row-hover" style="outline:none !important;">
+                                                            <div id="{!acc.Id}{!weekName}" style="outline:none !important;">
+                                                                <table cellspacing="0" cellpadding="0" id="WeekTable" style="outline:none !important;">
+                                                                    <tr style="outline:none !important;">
+                                                                        <td style="outline:none !important;">
+                                                                            <span style="color:grey">M</span>
+                                                                        </td>
+                                                                        <td style="outline:none !important;">
+                                                                            <span style="color:grey">T</span>
+                                                                        </td>
+                                                                        <td style="outline:none !important;">
+                                                                            <span style="color:grey">W</span>
+                                                                        </td>
+                                                                        <td style="outline:none !important;">
+                                                                            <span style="color:grey">T</span>
+                                                                        </td>
+                                                                        <td style="outline:none !important;">
+                                                                            <span style="color:grey">F</span>
+                                                                        </td>
+                                                                    </tr>
+
+                                                                    <tr>
+                                                                        <td>
+                                                                            <apex:variable value="" var="UncheckedEvent"/>
+                                                                            <apex:repeat value="{!EventsMap[acc.Id][weekName]}" var="dayOfEvent">
+                                                                                <apex:outputPanel rendered="{!if(dayOfEvent == '1Mon', true, false)}">
+                                                                                    <apex:repeat value="{!EventsMap[acc.Id][weekName]['1Mon']}" var="Event1Mon">
+                                                                                        <apex:variable var="dayCounter" value="{!dayCounter + 1}"/>
+                                                                                        <apex:variable value="true" var="UncheckedEvent"/>
+                                                                                        <apex:variable var="DaysSortVal" value="{!DaysSortVal & weekName & '1Mon'}"/>
+                                                                                        <input type="checkbox" checked="{!eventChecked}" class="'1Mon'" onchange="dayCheckboxClick('{!dayCounter}-{!acc.Id}-{!weekName}-{!dayOfEvent}');"/>
+                                                                                    </apex:repeat>
+                                                                                </apex:outputPanel>
+                                                                            </apex:repeat>
+                                                                            <apex:outputPanel rendered="{!if(UncheckedEvent == 'true', false, true)}">
+                                                                                <apex:variable var="dayCounter" value="{!dayCounter + 1}"/>
+                                                                                <!--<apex:variable var="DaysSortVal" value="{!"Z" & DaysSortVal}"/>-->
+                                                                                <input type="checkbox" class="'1Mon'" onchange="dayCheckboxClick('{!dayCounter}-{!acc.Id}-{!weekName}-1Mon');"/>
+                                                                            </apex:outputPanel>
+                                                                        </td>
+                                                                        <td>
+                                                                            <apex:variable value="" var="UncheckedEvent"/>
+                                                                            <apex:repeat value="{!EventsMap[acc.Id][weekName]}" var="dayOfEvent">
+                                                                                <apex:outputPanel rendered="{!if(dayOfEvent == '2Tue', true, false)}">
+                                                                                    <apex:repeat value="{!EventsMap[acc.Id][weekName][dayOfEvent]}" var="Event">
+                                                                                        <apex:variable var="dayCounter" value="{!dayCounter + 1}"/>
+                                                                                        <apex:variable value="true" var="UncheckedEvent"/>
+                                                                                        <apex:variable var="DaysSortVal" value="{!DaysSortVal & weekName & dayOfEvent}"/>
+                                                                                        <input type="checkbox" checked="{!eventChecked}" class="{!dayOfEvent}" onchange="dayCheckboxClick('{!dayCounter}-{!acc.Id}-{!weekName}-{!dayOfEvent}');"/>
+                                                                                    </apex:repeat>
+                                                                                </apex:outputPanel>
+                                                                            </apex:repeat>
+                                                                            <apex:outputPanel rendered="{!if(UncheckedEvent == 'true', false, true)}">
+                                                                                <apex:variable var="dayCounter" value="{!dayCounter + 1}"/>
+                                                                                <!--<apex:variable var="DaysSortVal" value="{!"Z" & DaysSortVal}"/>-->
+                                                                                <!--<apex:inputCheckbox styleClass="'2Tue'" onchange="openLoadingdialog();dayCheckboxClick('{!dayCounter}-{!acc.Id}-{!weekName}-2Tue');"/>-->
+                                                                                <input type="checkbox" class="'2Tue'" onchange="dayCheckboxClick('{!dayCounter}-{!acc.Id}-{!weekName}-2Tue');"/>
+                                                                            </apex:outputPanel>
+                                                                        </td>
+                                                                        <td>
+                                                                            <apex:variable value="" var="UncheckedEvent"/>
+                                                                            <apex:repeat value="{!EventsMap[acc.Id][weekName]}" var="dayOfEvent">
+                                                                                <apex:outputPanel rendered="{!if(dayOfEvent == '3Wed', true, false)}">
+                                                                                    <apex:repeat value="{!EventsMap[acc.Id][weekName][dayOfEvent]}" var="Event">
+                                                                                        <apex:variable var="dayCounter" value="{!dayCounter + 1}"/>
+                                                                                        <apex:variable value="true" var="UncheckedEvent"/>
+                                                                                        <apex:variable var="DaysSortVal" value="{!DaysSortVal & weekName & dayOfEvent}"/>
+                                                                                        <input type="checkbox" checked="{!eventChecked}" class="{!dayOfEvent}" onchange="dayCheckboxClick('{!dayCounter}-{!acc.Id}-{!weekName}-{!dayOfEvent}');"/>
+                                                                                    </apex:repeat>
+                                                                                </apex:outputPanel>
+                                                                            </apex:repeat>
+                                                                            <apex:outputPanel rendered="{!if(UncheckedEvent == 'true', false, true)}">
+                                                                                <apex:variable var="dayCounter" value="{!dayCounter + 1}"/>
+                                                                                <!--<apex:variable var="DaysSortVal" value="{!"Z" & DaysSortVal}"/>-->
+                                                                                <!--<apex:inputCheckbox styleClass="'3Wed'" onchange="openLoadingdialog();dayCheckboxClick('{!dayCounter}-{!acc.Id}-{!weekName}-3Wed');"/>-->
+                                                                                <input type="checkbox" class="'3Wed'" onchange="dayCheckboxClick('{!dayCounter}-{!acc.Id}-{!weekName}-3Wed');"/>
+                                                                            </apex:outputPanel>
+                                                                        </td>
+                                                                        <td>
+                                                                            <apex:variable value="" var="UncheckedEvent"/>
+                                                                            <apex:repeat value="{!EventsMap[acc.Id][weekName]}" var="dayOfEvent">
+                                                                                <apex:outputPanel rendered="{!if(dayOfEvent == '4Thu', true, false)}">
+                                                                                    <apex:repeat value="{!EventsMap[acc.Id][weekName][dayOfEvent]}" var="Event">
+                                                                                        <apex:variable var="dayCounter" value="{!dayCounter + 1}"/>
+                                                                                        <apex:variable value="true" var="UncheckedEvent"/>
+                                                                                        <apex:variable var="DaysSortVal" value="{!DaysSortVal & weekName & dayOfEvent}"/>
+                                                                                        <!--<apex:inputCheckbox value="{!eventChecked}" styleClass="{!dayOfEvent}" onchange="openLoadingdialog();dayCheckboxClick('{!dayCounter}-{!acc.Id}-{!weekName}-{!dayOfEvent}');"/>-->
+                                                                                        <input type="checkbox" checked="{!eventChecked}" class="{!dayOfEvent}" onchange="dayCheckboxClick('{!dayCounter}-{!acc.Id}-{!weekName}-{!dayOfEvent}');"/>
+                                                                                    </apex:repeat>
+                                                                                </apex:outputPanel>
+                                                                            </apex:repeat>
+                                                                            <apex:outputPanel rendered="{!if(UncheckedEvent == 'true', false, true)}">
+                                                                                <apex:variable var="dayCounter" value="{!dayCounter + 1}"/>
+                                                                                <!--<apex:variable var="DaysSortVal" value="{!"Z" & DaysSortVal}"/>-->
+                                                                                <!--<apex:inputCheckbox styleClass="'4Thu'" onchange="openLoadingdialog();dayCheckboxClick('{!dayCounter}-{!acc.Id}-{!weekName}-4Thu');"/>-->
+                                                                                <input type="checkbox" class="'4Thu'" onchange="dayCheckboxClick('{!dayCounter}-{!acc.Id}-{!weekName}-4Thu');"/>
+                                                                            </apex:outputPanel>
+                                                                        </td>
+                                                                        <td>
+                                                                            <apex:variable value="" var="UncheckedEvent"/>
+                                                                            <apex:repeat value="{!EventsMap[acc.Id][weekName]}" var="dayOfEvent">
+                                                                                <apex:outputPanel rendered="{!if(dayOfEvent == '5Fri', true, false)}">
+                                                                                    <apex:repeat value="{!EventsMap[acc.Id][weekName][dayOfEvent]}" var="Event">
+                                                                                        <apex:variable var="dayCounter" value="{!dayCounter + 1}"/>
+                                                                                        <apex:variable value="true" var="UncheckedEvent"/>
+                                                                                        <apex:variable var="DaysSortVal" value="{!DaysSortVal & weekName & dayOfEvent}"/>
+                                                                                        <!--<apex:inputCheckbox value="{!eventChecked}" styleClass="{!dayOfEvent}" onchange="openLoadingdialog();dayCheckboxClick('{!dayCounter}-{!acc.Id}-{!weekName}-{!dayOfEvent}');"/>-->
+                                                                                        <input type="checkbox" checked="{!eventChecked}" class="{!dayOfEvent}" onchange="dayCheckboxClick('{!dayCounter}-{!acc.Id}-{!weekName}-{!dayOfEvent}');"/>
+                                                                                    </apex:repeat>
+                                                                                </apex:outputPanel>
+                                                                            </apex:repeat>
+                                                                            <apex:outputPanel rendered="{!if(UncheckedEvent == 'true', false, true)}">
+                                                                                <apex:variable var="dayCounter" value="{!dayCounter + 1}"/>
+                                                                                <!--<apex:variable var="DaysSortVal" value="{!"Z" & DaysSortVal}"/>-->
+                                                                                <!--<apex:inputCheckbox styleClass="'5Fri'" onchange="openLoadingdialog();dayCheckboxClick('{!dayCounter}-{!acc.Id}-{!weekName}-5Fri');"/>-->
+                                                                                <input type="checkbox" class="'5Fri'" onchange="dayCheckboxClick('{!dayCounter}-{!acc.Id}-{!weekName}-5Fri');"/>
+                                                                            </apex:outputPanel>
+                                                                        </td>
+                                                                        <!--</apex:repeat>-->
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td colspan="5">
+                                                                            <apex:repeat value="{!EventsMap[acc.Id][weekName]}" var="dayOfEvent">
+                                                                                <apex:repeat value="{!EventsMap[acc.Id][weekName][dayOfEvent]}" var="Event">
+                                                                                    <apex:variable value="{!Event.Event_Status__c}" var="linkClass"/>
+                                                                                    <a href="/{!Event.Id}" target="_blank" style="color:{!linkClass};font-weight:bold;" rendered="{!if(Event.Id =='', false, true)}">
+                                                                                        {!dayLabels[dayOfEvent]}&nbsp;</a>
+                                                                                </apex:repeat>
+                                                                            </apex:repeat>
+                                                                        </td>
+                                                                    </tr>
+                                                                </table>
+                                                            </div>
+                                                        </td>
+                                                    </apex:repeat>
+                                                </apex:outputText>
+                                                <td style="display:none;" id="DaysSortValId">{!DaysSortVal}</td>
+                                            </tr>
+                                        </apex:repeat>
+                                        <tr>
+                                            <td colspan="6" style="height: auto;">
+                                                &nbsp;
+                                            </td>
+                                        </tr>
+
+                                        <!-- Total Number of calls -->
+                                        <tr>
+                                            <apex:repeat value="{!weeksHeader}" var="weekName" rendered="{!if(AND(selectedWeek == 'All',userLocation=='australia'),true, false)}">
+                                                <td style="height: 30px;">
+                                                    <table cellspacing="0" cellpadding="0" id="WeekTable">
+                                                        <tr>
+                                                            <apex:repeat value="{!daysHeader}" var="dayName">
+                                                                <td>
+                                                                {!dayWiseStatsAus[dayName][weekName]}
+                                                            </td>
+                                                            </apex:repeat>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </apex:repeat>
+                                        </tr>
+                                        <tr>
+                                            <apex:repeat value="{!weeksHeader}" var="weekName" rendered="{!if(selectedWeek == 'All', true, false)}">
+                                                <td style="height: 30px;text-align: center">{!numberOfCallsMap[weekName]}</td>
+                                            </apex:repeat>
+                                            <apex:repeat value="{!daysHeader}" var="dayName" rendered="{!if(selectedWeek == 'All', false, true)}">
+                                                <td style="height: 30px;text-align: center">{!numberOfCallsMap[dayName]}</td>
+                                            </apex:repeat>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+
+                        <div class="slds-page-header slds-grid slds-m-top--medium">
+                            <div class="slds-col" align="right">
+                                <div class="slds-button-group" role="group">
+                                    <div class="slds-col slds-no-flex slds-grid slds-align-top">
+                                        <apex:outputPanel >
+                                            <!-- <apex:commandButton value="{!$Label.save}" onclick="openLoadingdialog();doSave(); return false;" rerender="PlanningGrid,totalCallsRowPanel,error" styleClass="slds-button slds-button_neutral" style="position: relative; top: -1px"/> -->
+                                            <apex:commandButton value="{!$Label.cancel}" action="{!cancel}" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();" rerender="PlanningGrid,totalCallsRowPanel,error" styleClass="slds-button slds-button_neutral"/>
+                                        </apex:outputPanel>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="scroll-up-button-container">
+                            <div class="scroll-up-button" title="Up">
+                                &uarr;
+                            </div>
+                        </div>
+
+                        <style>
+                            .scroll-up-button-container {
+                                padding: 2rem;
+                                position: fixed;
+                                bottom: 0;
+                                right: 0;
+                                pointer-events: none;
+                            }
+
+                            .scroll-up-button {
+                                width: 3rem;
+                                height: 3rem;
+                                border-radius: 50%;
+                                background: black;
+                                opacity: 0;
+                                color: white;
+                                cursor: pointer;
+                                transition: opacity 0.2s ease-in-out;
+                                text-align: center;
+                                line-height: 2.5rem;
+                                font-size: 2rem;
+                                pointer-events: none;
+                            }
+
+                            .scroll-up-button.visible {
+                                opacity: 0.5;
+                                pointer-events: all;
+                            }
+
+                            .scroll-up-button.visible:hover {
+                                opacity: 1;
+                            }
+
+                            .message[role="alert"] {
+                                background-color: #1589ee !important;
+                            }
+                        </style>
+
+                        <script>
+                            var $j = jQuery.noConflict();
+
+                            $j(function() {
+                                let leftTable = document.querySelectorAll('#PlanningTable')[0];
+                                let rightTable = document.querySelectorAll('#PlanningTable')[1];
+
+                                let leftRows = leftTable.rows;
+                                let rightRows = rightTable.rows;
+
+                                for (let i = 0; i < leftRows.length - 3; i++) {
+                                    rightRows[i].style.height = leftRows[i].offsetHeight + 'px';
+                                }
+                            });
+
+                            $j(window).on('scroll', function() {
+                                if (window.scrollY > window.innerHeight / 3) {
+                                    $j('.scroll-up-button').addClass('visible');
+                                } else {
+                                    $j('.scroll-up-button').removeClass('visible');
+                                }
+                            });
+
+                            $j(function() {
+                                let isHeaderFixed = false;
+
+                                $j('.scroll-up-button').on('click', function() {
+                                    $j("html").animate({ scrollTop: 0 }, "slow");
+                                });
+
+                                window.addEventListener('scroll', function() {
+                                    let planningTable = $j(".PlanningTableContainer");
+                                    let container = $j('.fixed-header');
+
+                                    if (planningTable[0].getBoundingClientRect().y < -10) {
+                                        if (!isHeaderFixed) {
+                                            isHeaderFixed = true;
+
+                                            let leftHeader = $j('table.left-table thead', planningTable).clone(true);
+                                            let rightHeader = $j('table.right-table thead', planningTable).clone(true);
+
+                                            let table = document.createElement('table');
+                                            table.className = 'slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered';
+                                            table.id = 'PlanningTable';
+
+                                            container.show();
+
+                                            let leftHeaderClone = $j(table).clone().append(leftHeader);
+                                            let rightHeaderClone = $j(table).clone().append(rightHeader);
+
+                                            $j('.left-header', container).html('').append(leftHeaderClone);
+                                            $j('.right-header', container).html('').append(rightHeaderClone);
+
+                                            var selects = $j('table.left-table thead', planningTable).find("select");
+                                            $j(selects).each(function(i) {
+                                                var select = this;
+                                                $j(leftHeaderClone).find("select").eq(i).val($j(select).val()).on('change', function() {
+                                                    var selects = $j(leftHeaderClone).find("select");
+                                                    $j(selects).each(function(i) {
+                                                        var select = this;
+                                                        $j('table.left-table thead', planningTable).find('select').eq(i).val($j(select).val());
+                                                    });
+                                                });
+                                            });
+
+                                            $j('.right-table th', planningTable).each(function(item) {
+                                                $j('th', rightHeaderClone).eq(item).css('width', $j(this)[0].offsetWidth);
+                                            });
+
+                                            $j('.right-table-container').on('scroll', function() {
+                                                $j('.fixed-header .right-header').css('left', -$j(this)[0].scrollLeft)
+                                            });
+
+                                            $j('.fixed-header .right-header table').css('width', $j('.right-table')[0].offsetWidth);
+
+                                            $j(window).on('resize', function() {
+                                                $j('.fixed-header .right-header table').css('width', $j('.right-table')[0].offsetWidth);
+
+                                                $j('.right-table th', planningTable).each(function(item) {
+                                                    $j('th', rightHeaderClone).eq(item).css('width', $j(this)[0].offsetWidth);
+                                                });
+                                            });
+                                        }
+                                    } else if (isHeaderFixed) {
+                                        isHeaderFixed = false;
+
+                                        container.hide();
+
+                                        $j('.left-header', container).html('');
+                                        $j('.right-header', container).html('');
+                                    }
+                                });
+                            });
+                        </script>
+                    </apex:outputPanel>
+                    <br/>
+
+                    <apex:outputPanel id="totalCallsRowPanel">
+                        <table cellspacing="0" cellpadding="0" id="totalCallsRow">
+                            <apex:outputText rendered="{!totalPages > 1}">
+                                <tr>
+                                    <td colspan="{!FLOOR(columnCount)}">
+                                        <apex:outputPanel id="pagination">
+                                            <div style="float:left;width:10%;white-space: nowrap;"><b>Page:</b><br/>{!setCon.PageNumber} of {!totalPages}</div>
+                                            <div style="float:left;text-align:center;width:80%">
+                                                <apex:commandButton value="  |<  " action="{!first}" disabled="{!Not(setCon.HasPrevious)}" rerender="PlanningGrid,pagination,totalCallsRowPanel" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();"/> &nbsp;
+
+                                                <apex:commandButton value="  <  " action="{!previous}" disabled="{!Not(setCon.HasPrevious)}" rerender="PlanningGrid,pagination,totalCallsRowPanel" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();"/> &nbsp;
+
+                                                <apex:commandButton value="  >  " action="{!next}" disabled="{!Not(setCon.HasNext)}" rerender="PlanningGrid,pagination,totalCallsRowPanel" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();"/> &nbsp;
+
+                                                <apex:commandButton value="  >|  " action="{!last}" disabled="{!Not(setCon.HasNext)}" rerender="PlanningGrid,pagination,totalCallsRowPanel" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();"/>
+                                            </div>
+                                            <div style="float:right;width:10%px;white-space: nowrap;"><b>Page:</b><br/>{!setCon.PageNumber} of {!totalPages}</div>
+                                        </apex:outputPanel>
+                                    </td>
+                                </tr>
+                            </apex:outputText>
+                        </table>
+                    </apex:outputPanel>
+                    <br/>
+
+                    <table style='margin: 0px auto;'>
+                        <thead align="center">
+                        <tr>
+                            <td>
+                                <script type="text/javascript">
+                                    function confirmRes(showDialog) {
+                                        if (showDialog) {
+                                            var result = confirm('Are you sure you want to overwrite your existing default Call Plan?');
+
+                                            setOverrideDefault(result);
+
+                                        }
+                                        return true;
+
+                                    }
+                                </script>
+
+                            </td>
+                        </tr>
+                        </thead>
+                    </table>
+
+                    <br/>
+                    
+                    <!-- LOAD FROM TEMPLATE MODAL START -->
+                    <div id="load-template-modal" class="modal slds-scope" style="display: none">
+                        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_medium" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1">
+                            <div class="slds-modal__container">
+                                <header class="slds-modal__header">
+                                    <h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Load from Template</h2>
+                                </header>
+                                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1" style="text-align: center;">
+                                    <p >Select the Call Cycle you want to load the Template Cycle into</p>
+                                    <br/>
+                                    <apex:selectList value="{!selectedCurrentOrFutureCallCycleLoad}"  multiselect="false" size="1" id="selectedCurrentOrFutureCallCycleLoad">
+                                        <apex:selectOptions value="{!currentAndFutureCallCycles}"/>  
+                                    </apex:selectList>
+                                    <br/><br/>
+                                    <apex:selectList value="{!selectedOwnerLoad}" multiselect="false" size="1" id="OuletFilterxx">
+                                        <apex:selectOptions value="{!owners}"/>
+                                    </apex:selectList>
+                                </div>
+                                <footer class="slds-modal__footer" style="text-align: center;">
+                                    <commandbutton class="slds-button slds-button_neutral" onclick="closeLoadTemplateModal(); return false;">Cancel</commandbutton>
+                                    <apex:commandButton value="Save" action="{!saveLoadFromTemplate}" onclick="openLoadingdialog();" oncomplete="showToast('The call cycle template has been loaded into the Call Cycle!'); destroyLoadingDialog(); closeLoadTemplateModal();" rerender="PlanningGrid" styleClass="slds-button slds-button_brand"></apex:commandButton>
+                                </footer>
+                            </div>
+                        </section>
+                        <div class="slds-backdrop slds-backdrop_open"></div>
+                    </div>
+                    <!-- LOAD FROM TEMPLATE MODAL END -->
+
+                    <!-- SAVE TEMPLATE MODAL START -->
+                    <div id="save-template-modal" class="modal slds-scope" style="display: none">
+                        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_medium" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1">
+                            <div class="slds-modal__container">
+                                <header class="slds-modal__header">
+                                    <h2 id="save-modal-heading" class="slds-modal__title slds-hyphenate">Save Template</h2>
+                                </header>
+                                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1" style="text-align: center;">
+                                    <p >Select the Call Cycle you want to use as a Template</p>
+                                    <br/>
+                                    <apex:selectList value="{!selectedCurrentOrPastCallCycle}" multiselect="false" size="1" id="selectedCurrentOrPastCallCycle">
+                                        <!--<apex:selectOptions value="{!currentAndPastCallCycles}"/> -->
+                                        <apex:selectOptions value="{!currentAndFutureCallCycles}"/> 
+                                        
+                                    </apex:selectList>
+                                    <br/><br/>
+                                    <apex:selectList value="{!selectedOwnerTemplate}" multiselect="false" size="1" id="OuletFilter2">
+                                        <apex:selectOptions value="{!owners}"/>
+                                    </apex:selectList>
+                                </div>
+                                <footer class="slds-modal__footer" style="text-align: center;">
+                                    <commandbutton class="slds-button slds-button_neutral" onclick="closeSaveTemplateModal(); return false;">Cancel</commandbutton>
+                                    <commandbutton class="slds-button slds-button_brand" onclick="openConfirmationOfSaveTemplateModal(); return false;">Save</commandbutton>
+                                </footer>
+                            </div>
+                        </section>
+                        <div class="slds-backdrop slds-backdrop_open"></div>
+                    </div>
+                    <!-- SAVE TEMPLATE MODAL END -->
+
+                    <!-- SAVE CONFIRMATION TEMPLATE MODAL START -->
+                    <div id="save-confirmation-template-modal" class="modal slds-scope" style="display: none">
+                        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_medium" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1">
+                            <div class="slds-modal__container">
+                                <header class="slds-modal__header">
+                                    <h2 id="save-modal-heading" class="slds-modal__title slds-hyphenate">Save Template</h2>
+                                </header>
+                                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1" style="text-align: center;">
+                                    <p>Are you certain?</p>
+                                    <br/>
+                                    <p>You are about to override the Call cycle template!</p>
+                                    <br/>
+                                </div>
+                                <footer class="slds-modal__footer" style="text-align: center;">
+                                    <commandbutton class="slds-button slds-button_neutral" onclick="closeConfirmationOfSaveTemplateModal(); return false;">No</commandbutton>
+                                    <apex:commandButton value="Yes" action="{!saveCallCycleTemplate}" onclick="openLoadingdialog();" oncomplete="showToast('The call cycle template has been overwritten!'); destroyLoadingDialog(); closeConfirmationOfSaveTemplateModal();" rerender="PlanningGrid" styleClass="slds-button slds-button_brand"/>
+                                </footer>
+                            </div>
+                        </section>
+                        <div class="slds-backdrop slds-backdrop_open"></div>
+                    </div>
+                    <!-- SAVE CONFIRMATION TEMPLATE MODAL END -->
+
+                    <!-- SWAP 2 DAYS MODAL START -->
+                    <div id="swap-days-template-modal" class="modal slds-scope" style="display: none">
+                        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_medium" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-swap">
+                            <div class="slds-modal__container">
+                                <header class="slds-modal__header">
+                                    <h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Swap 2 Days</h2>
+                                </header>
+                                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-swap" style="text-align: center;">
+                                    <p>You are about to swap all meeting for: </p>
+                                    <br/>
+                                    <div style="display: -webkit-inline-box;">
+                                        <p style="margin-block: auto;margin-right: 5%;">Call Cycle </p>
+                                    <apex:selectList value="{!selectedCurrentOrFutureCallCycle}" multiselect="false" size="1" id="selectedCurrentOrFutureCallCycle2">
+                                        <apex:selectOptions value="{!currentAndFutureCallCycles}"/>  
+                                    </apex:selectList>
+                                    </div>
+                                    <br/><br/>
+                                    <div style="display: -webkit-inline-box;">
+                                        <p style="margin-block: auto;margin-right: 5%;">Calls Assigned to: </p>
+                                    <apex:selectList value="{!selectedOwner}" multiselect="false" size="1" id="OuletFilter3">
+                                        <apex:selectOptions value="{!owners}"/>
+                                        </apex:selectList>
+                                    </div>
+                                    <br/><br/>
+                                    <div style="display: -webkit-inline-box;">
+                                        <p style="margin-block: auto;margin-right: 5%;">Week From</p>
+                                        <apex:selectList value="{!selectedWeekFromDays}" multiselect="false" size="1" id="xx2">
+                                            <apex:selectOptions value="{!weekOptions}"/>  
+                                        </apex:selectList>
+
+                                        <p style="margin-block: auto;margin-right: 5%;margin-left: 5%;">Day From</p>
+                                        <apex:selectList value="{!selectedDayFrom}" multiselect="false" size="1" id="xxxx">
+                                            <apex:selectOptions value="{!daysOptions}"/>
+                                        </apex:selectList>
+                                    </div> 
+
+                                    <br/><br/>
+                                    <div style="display: -webkit-inline-box;margin-right: 22px;">
+                                        <p style="margin-block: auto;margin-right: 5%;margin-left: 5%;">Week To</p>
+                                        <apex:selectList value="{!selectedWeekToDays}" multiselect="false" size="1" id="weekId">
+                                            <apex:selectOptions value="{!weekOptions}"/>
+                                        </apex:selectList>
+
+                                        <p style="margin-block: auto;margin-right: 11%;margin-left: 7%;">Day To</p>
+                                        <apex:selectList value="{!selectedDayTo}" multiselect="false" size="1" id="dayId">
+                                            <apex:selectOptions value="{!daysOptions}"/>
+                                        </apex:selectList>
+                                    </div> 
+
+                                <br/><br/>
+                                </div>
+                                <footer class="slds-modal__footer" style="text-align: center;">
+                                    <commandbutton class="slds-button slds-button_neutral" onclick="closeSwapDaysModal(); return false;">Cancel</commandbutton>
+                                    <apex:commandButton value="Save" action="{!saveSwapDays}" onclick="openLoadingdialog();" oncomplete="showToast('All meeting has been swapped!'); destroyLoadingDialog(); closeSwapDaysModal();" rerender="PlanningGrid" styleClass="slds-button slds-button_brand"></apex:commandButton>
+                                </footer>
+                            </div>
+                        </section>
+                        <div class="slds-backdrop slds-backdrop_open"></div>
+                    </div>
+                    <!-- SWAP 2 DAYS MODAL END -->
+
+                    <!-- SWAP 2 WEEKS MODAL START -->
+                    <div id="weeks-template-modal" class="modal slds-scope" style="display: none">
+                        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_medium" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-swap">
+                            <div class="slds-modal__container">
+                                <header class="slds-modal__header">
+                                    <h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Swap 2 Weeks</h2>
+                                </header>
+                                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-swap" style="text-align: center;">
+                                    <p>You are about to swap all meeting for: </p>
+                                    <br/>
+                                    <div style="display: -webkit-inline-box;">
+                                        <p style="margin-block: auto;margin-right: 5%;">Call Cycle </p>
+                                    <apex:selectList value="{!selectedCurrentOrFutureCallCycle}" multiselect="false" size="1" id="selectedCurrentOrFutureCallCycle2w">
+                                        <apex:selectOptions value="{!currentAndFutureCallCycles}"/>  
+                                    </apex:selectList>
+                                    </div>
+                                    <br/><br/>
+                                    <div style="display: -webkit-inline-box;">
+                                        <p style="margin-block: auto;margin-right: 5%;">Calls Assigned to: </p>
+                                    <apex:selectList value="{!selectedOwner}" multiselect="false" size="1" id="OuletFilter2w">
+                                        <apex:selectOptions value="{!owners}"/>
+                                        </apex:selectList>
+                                    </div>
+                                    <br/><br/>
+                                    <div style="display: -webkit-inline-box;">
+                                        <p style="margin-block: auto;margin-right: 5%;">Week From</p>
+                                        <apex:selectList value="{!selectedWeekFrom}" multiselect="false" size="1" id="selectedId">
+                                            <apex:selectOptions value="{!weekOptions}"/>  
+                                        </apex:selectList>
+
+                                        <p style="margin-block: auto;margin-right: 5%;margin-left: 5%;">Week To</p>
+                                        <apex:selectList value="{!selectedWeekTo}" multiselect="false" size="1" id="selectedWeekId">
+                                            <apex:selectOptions value="{!weekOptions}"/>
+                                        </apex:selectList>
+                                    </div> 
+
+                                <br/><br/>
+                                </div>
+                                <footer class="slds-modal__footer" style="text-align: center;">
+                                    <commandbutton class="slds-button slds-button_neutral" onclick="closeSwapWeeksModal(); return false;">Cancel</commandbutton>
+                                    <apex:commandButton value="Save" action="{!saveSwapWeeks}" onclick="openLoadingdialog();" oncomplete="showToast('The call cycle template has been created!'); destroyLoadingDialog(); closeSwapWeeksModal();" rerender="PlanningGrid" styleClass="slds-button slds-button_brand"/> 
+                                </footer>
+                            </div>
+                        </section>
+                        <div class="slds-backdrop slds-backdrop_open"></div>
+                    </div>
+                    <!-- SWAP 2 WEEKS MODAL END -->
+
+                        <script>
+                            if ('{!hasNotification}' != 'null') {
+                                //alert('{!hasNotification}');
+                            }
+
+                            function showErrorToast(msg) {
+                                sforce.one.showToast({
+                                    "title": "Error!",
+                                    "message": msg,
+                                    "type": "error"
+                                });
+                            }
+
+                            function showSuccessToast(msg) {
+                                sforce.one.showToast({
+                                    "title": "Success!",
+                                    "message": msg,
+                                    "type": "success"
+                                });
+                            }
+
+                            function showWarningToast(msg) {
+                                sforce.one.showToast({
+                                    "title": "Warning!",
+                                    "message": msg,
+                                    "type": "warning"
+                                });
+                            }
+
+                            function showToast(msg) {
+                                var hasNotificationVariable = '{!hasNotification}';
+                                console.log('hasNotification: ' + hasNotificationVariable);
+
+                                if(hasNotificationVariable === 'error'){
+                                    showErrorToast(msg);
+                                }
+                                else if(hasNotificationVariable === 'success'){
+                                    showSuccessToast(msg);
+                                }
+                                else if(hasNotificationVariable === 'warning'){
+                                    showWarningToast({!msgNotification});
+                                }
+                                else{
+                                    showSuccessToast(msg);
+                                }
+                            }
+                        </script>
+
+
+                </div>
+
+                <apex:outputPanel id="modalPanel">
+                    <script type="text/javascript">
+                        
+           
+                    </script>
+                 </apex:outputPanel>
+
+
+            </apex:form>
+        </apex:pageBlock>
+
+        <apex:outputPanel rendered="{!NOT(countryFound)}" style="width:400px;margin:0px auto;">
+            <apex:pageMessages id="globalError"/>
+        </apex:outputPanel>
+    </div>
+    <!--Javascript-->
+    <script type="text/javascript">
+        var $j = jQuery.noConflict();
+        var left;
+        var top1;
+        /*bind click events and initialize dialogs on Document ready*/
+        $j(function () {
+
+            /*Hide Dialog initially*/
+            $j("#createEventDialog").hide();
+            $j("#displayEventInfo").hide();
+            $j("#loading-message").hide();
+            $j("#addressDialog").hide();
+
+            $j('#dropdownSelections').removeClass('slds-is-open');
+
+
+        });
+        /*End Document Ready*/
+
+        $j('#dropdownSelections').click(function () {
+            $j(this).toggleClass('slds-is-open');
+        });
+
+		function openLoadTemplateModal() {
+			$j('#load-template-modal').css('display', 'block');
+		}
+
+		function openSaveTemplateModal() {
+			$j('#save-template-modal').css('display', 'block');
+		}
+
+        function openSwapDaysModal() {
+			$j('#swap-days-template-modal').css('display', 'block');
+		}
+
+        function openSwapWeeksModal() {
+			$j('#weeks-template-modal').css('display', 'block');
+		}
+
+		function closeLoadTemplateModal() {
+			$j('#load-template-modal').css('display', 'none');
+		}
+
+		function closeSaveTemplateModal() {
+			$j('#save-template-modal').css('display', 'none');
+		}
+
+        function openConfirmationOfSaveTemplateModal() {
+			$j('#save-template-modal').css('display', 'none');
+            $j('#save-confirmation-template-modal').css('display', 'block');
+		}
+
+        function closeConfirmationOfSaveTemplateModal() {
+            $j('#save-template-modal').css('display', 'none');
+            $j('#save-confirmation-template-modal').css('display', 'none');
+		}
+
+        function closeSwapDaysModal() {
+            $j('#swap-days-template-modal').css('display', 'none');
+        }
+
+        function closeSwapWeeksModal() {
+            $j('#weeks-template-modal').css('display', 'none');
+        }
+
+
+        function clearEventDetails() {
+
+            document.getElementById('{!$Component.mainblock.mainform.mon}').checked = false;
+            document.getElementById('{!$Component.mainblock.mainform.tue}').checked = false;
+            document.getElementById('{!$Component.mainblock.mainform.wed}').checked = false;
+            document.getElementById('{!$Component.mainblock.mainform.thu}').checked = false;
+            document.getElementById('{!$Component.mainblock.mainform.fri}').checked = false;
+            if (document.getElementById('{!$Component.mainblock.mainform.sat}'))
+                document.getElementById('{!$Component.mainblock.mainform.sat}').checked = false;
+            if (document.getElementById('{!$Component.mainblock.mainform.sun}'))
+                document.getElementById('{!$Component.mainblock.mainform.sun}').checked = false;
+            document.getElementById('EventDescription').value = '';
+
+        }
+
+        //fixed horizontal scroll bar in the right table
+        $j(function(){
+            var scrollbar = $j('<div id="fixed-scrollbar"><div></div></div>').appendTo($j(document.body));
+
+            scrollbar.hide().css({
+                overflowX:'auto',
+                position:'fixed',
+                width:'100%',
+                bottom:0
+            });
+
+            var dummyContent = scrollbar.find('div');
+
+            //top coord
+            function top(e) {
+                return e.offset().top;
+            }
+
+            //bottom coord
+            function bottom(e) {
+                return e.offset().top + e.height();
+            }
+
+            var active = $j([]);
+
+            //find currently active elements
+            function find_active() {
+                scrollbar.show();
+                var active = $j([]);
+                $j('.fixed-scrollbar').each(function() {
+                    if (top($j(this)) < top(scrollbar) && bottom($j(this)) > bottom(scrollbar)) {
+                        dummyContent.width($j(this).get(0).scrollWidth);
+                        dummyContent.height(1);
+                        active = $j(this);
+                    }
+                });
+                fit(active);
+                return active;
+            }
+
+            function fit(active) {
+                if (!active.length){
+                    return scrollbar.hide();
+                }
+
+                scrollbar.css({left: active.offset().left, width:active.width()});
+                dummyContent.width($j(this).get(0).scrollWidth);
+                dummyContent.height(1);
+                delete lastScroll;
+            }
+
+            function onscroll(){
+                var oldActive = active;
+                active = find_active();
+                if (oldActive.not(active).length) {
+                    oldActive.unbind('scroll', update);
+                }
+                if (active.not(oldActive).length) {
+                    active.scroll(update);
+                }
+                update();
+            }
+
+            var lastScroll;
+            function scroll() {
+                if (!active.length){
+                    return;
+                }
+
+                if (scrollbar.scrollLeft() === lastScroll){
+                    return;
+                }
+
+                lastScroll = scrollbar.scrollLeft();
+                active.scrollLeft(lastScroll);
+            }
+
+            function update() {
+                if (!active.length){
+                    return;
+                }
+
+                if (active.scrollLeft() === lastScroll){
+                    return;
+                }
+
+                lastScroll = active.scrollLeft();
+                scrollbar.scrollLeft(lastScroll);
+            }
+
+            scrollbar.scroll(scroll);
+
+            onscroll();
+            $j(window).scroll(onscroll);
+            $j(window).resize(onscroll);
+        });
+
+    </script>
+
+</apex:page>

@@ -1,0 +1,719 @@
+<!--
+ * @author    : Created by Geeta Kushwaha on 2 Mar, 2013  geeta.kushwaha@arxxus.com
+ * @Purpose   : Objective Planning Page for AUS
+ * @Criteria  : 
+ * @Modified  : Modified by Geeta Kushwaha on 3 Mar, 2013  geeta.kushwaha@arxxus.com
+ *-->
+<apex:page sidebar="false" showHeader="true" id="page" controller="ObjectivePlanningController">
+    <head>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    </head>
+    <!--Load Javascripts from Google Repo and Static Resources Site-->
+    <apex:stylesheet value="{!$Resource.JQueryUICSS}"/>    
+    
+    <apex:includeScript value="{!URLFOR($Resource.jquery, '/jquery/js/jquery.min.2.0.0.js')}"/>
+      
+    <apex:includeScript value="{!URLFOR($Resource.jquery, '/jquery/js/jquery-ui-1.10.2.custom.min.js')}"/>
+
+    <!-- including jquery ui tinytbl -->   
+    <apex:stylesheet value="{!URLFOR($Resource.jquery, '/jquery/css/jquery.ui.tinytbl.css')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jquery, '/jquery/js/jquery.ui.tinytbl.js')}"/>
+    <apex:includeScript value="{!$Resource.slideout}" />
+
+
+    <!-- demo -->
+       
+    <apex:includeScript value="{!$Resource.demo}"/>
+    <apex:stylesheet value="{!$Resource.ObjectivePlanningCSS}"/>
+    
+    <!-- <apex:includeScript value="{!URLFOR($Resource.jquery, '/jquery/js/jquery-freezeheader.js')}"/> -->
+    <script type="text/javascript">
+        var $ = jQuery.noConflict(); 
+                                            
+        function openLoadingdialog(){
+            $("#loading-message").dialog({  
+                draggable:false,
+                resizable:false,
+                closeOnEscape: false,
+                open: function(event, ui) { $(".ui-dialog-titlebar-close").hide();$(".ui-dialog-titlebar").hide();},
+                modal: true,
+                width:200,
+                minHeight: 0                                                                                                                           
+            });
+        
+        }
+        
+        function destroyLoadingDialog(){
+            $("#loading-message").dialog("close" );
+        }  
+        
+        function objectiveInformation() { 
+               
+            /*display the objective information*/
+            $("#objectiveDialog").dialog({
+                open: function(event, ui) { $(".ui-dialog-titlebar-close").show();},
+                modal:true,       
+                width:430                
+            });
+        }
+         
+        function addressInformation() { 
+               
+                /*Send Ajax Call to controller and create task. Calls saveTask function*/
+                $("#addressDialog").dialog({
+                    open: function(event, ui) { $(".ui-dialog-titlebar-close").show();},
+                    
+                    modal:true,       
+                    width:430
+                
+                });
+        }
+        
+        function selectActivityDate() { 
+            $('input:radio[name=selectedActivityDate]').attr('checked',false);
+            /*display the objective information*/
+            $("#callVisitTaskDialog").dialog({
+                open: function(event, ui) { $(".ui-dialog-titlebar-close").hide();},
+                modal:true,       
+                width:400,
+                height:'auto',
+                buttons: [{
+                    text: "OK",
+                    click: function () {
+                        $(this).dialog('close');
+                        var selectedTask = $('input:radio[name=selectedActivityDate]:checked').val();
+                        addTask(selectedTask);
+                    },
+                },{
+                    text: "{!$Label.cancel}",
+                    click: function () {
+                       $(this).dialog('close'); 
+                    },
+                }]
+            });
+        }  
+        
+        function confirmAddDel(showDialog){
+            if(showDialog){
+                var result = confirm('Few tasks have been added/deleted. Click OK to discard changes and Cancel to save.');
+                openLoadingdialog();
+                setClear(result);
+                
+            }  
+            return true;
+                                    
+        }  
+        
+        $(function(){
+        $('.slide-out-divcp').tabSlideOut({
+            tabHandle: '.handle',                     //class of the element that will become your tab
+            pathToTabImage: '{!$Resource.HelpIcon}', //path to the image for the tab //Optionally can be set using css
+            imageHeight: '122px',                     //height of tab image           //Optionally can be set using css
+            imageWidth: '40px',                       //width of tab image            //Optionally can be set using css
+            tabLocation: 'left',                      //side of screen where tab lives, top, right, bottom, or left
+            speed: 300,                               //speed of animation
+            action: 'click',                          //options: 'click' or 'hover', action to trigger animation
+            topPos: '87px',                          //position from the top/ use if tabLocation is left or right
+            leftPos: '20px',                          //position from left/ use if tabLocation is bottom or top
+            fixedPosition: false                      //options: true makes it stick(fixed position) on scroll
+        });
+
+    }); 
+                                    
+    </script>
+    <style>
+        .slide-out-divcp {
+              padding: 20px;
+              width: 315px;
+              background: rgb(173,182,212);
+              border: 2px solid #29216d;
+          } 
+    </style>      
+    <apex:pageBlock id="mainBlock" >
+        <apex:form id="mainForm" rendered="{!countryFound}">
+            <apex:actionFunction name="populatenewobjectives" rerender="objectivePicklist,error" action="{!populateNewObjectives}"/>
+            <apex:actionFunction name="search" action="{!searchAccounts}" rerender="PlanningGrid,totalCallsRowPanel,error" oncomplete="destroyLoadingDialog();return confirmAddDel({!taskAddedDeleted});"/> 
+            <apex:actionFunction name="setClear" action="{!searchAccounts}" rerender="PlanningGrid,error,totalCallsRowPanel" oncomplete="destroyLoadingDialog()">
+                <apex:param name="clearVal" value="" assignTo="{!clear}" />
+            </apex:actionFunction>  
+            <apex:actionFunction name="callExport" action="{!downloadExcel}" />
+            <apex:actionFunction name="addTask" action="{!addTasks}" rerender="PlanningGrid,error">
+                <apex:param name="selectedTask" value="" assignTo="{!selectedTask}"/>
+            </apex:actionFunction>            
+            <!-- Table for filters & Objective mgmt heading -->
+            <table cellspacing="0" cellpadding="0" id="filterTable">
+                <tr>
+                    <td colspan="10" style="text-align:left;font-size:16px;font-weight:bold;border-bottom: 1px solid #ddd;">
+                        <apex:image value="{!$Resource.CallPlanningIcon}"/>
+                        Objective Management   
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="10"></td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="padding-left:20px;">
+                        <table  id="innerFilterTable"  class="tdData windowWidth" >
+                            <tr>
+                                <td><!--<apex:commandButton image="{!$Resource.CampariLogo}" style="padding:0px !important;height:22px;width:70px;border:0px !important;" action="{!home}"/>--></td>
+                                <td colspan="6" style="text-align:center;font-size:15px;font-weight:bold;background-color:rgb(173,182,212)">Filter Outlet Accounts By</td>
+                                <td><apex:commandButton value="   Refresh   " action="{!searchAccounts}" rerender="PlanningGrid,totalCallsRowPanel,error" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();return confirmAddDel({!taskAddedDeleted});" style="float: right;"/>&nbsp;&nbsp;</td>
+                            </tr>
+                            <!--Filters-->
+                            <!--Row 1-->
+                            <tr >
+                                <td >
+                                    <b>Year:&nbsp;</b>
+                                </td>
+                                <td >
+                                    <apex:selectList value="{!selectedYear}" multiselect="false" size="1" id="YearFilter" onchange="populatenewobjectives()">
+                                        <apex:selectOptions value="{!years}"/>
+                                    </apex:selectList>
+                                </td>
+                                <td>
+                                    <b>Banner Group:&nbsp;</b>
+                                </td>
+                                <td>
+                                    <apex:selectList value="{!selectedBanerGroup}" multiselect="false" size="1" id="BannerGroup">
+                                        <apex:selectOptions value="{!bannerGroups}"/>
+                                    </apex:selectList>
+                                </td>
+                                <td>
+                                    <b>Owner:&nbsp;</b>
+                                </td>
+                                <td>
+                                    <apex:selectList value="{!selectedOutlet}" multiselect="false" size="1" id="OuletFilter">
+                                        <apex:selectOptions value="{!outlets}"/>
+                                    </apex:selectList>
+                                </td>
+                            </tr>
+                            <!--Row 2-->
+                            <tr >
+                                <td>
+                                    <b>Call Cycle:&nbsp;</b>
+                                </td>
+                                <td>
+                                    <apex:selectList value="{!selectedCallCycle}" multiselect="false" size="1" id="CallCycleFilter" onchange="populatenewobjectives()">
+                                        <apex:selectOptions value="{!callCycles}"/>
+                                    </apex:selectList>
+                                </td>
+                                <td>
+                                    <b>Objectives:&nbsp;</b>
+                                </td>
+                                <td>
+                                    <apex:selectList value="{!selectedObjective}" multiselect="false" size="1" id="objectivePicklist" >
+                                        <apex:selectOptions value="{!objectives}"/>
+                                    </apex:selectList>
+                                </td>
+                                <td>
+                                    <b>Grading:&nbsp;</b>
+                                </td>
+                                <td>
+                                    <apex:selectList value="{!selectedGrading}" multiselect="false" size="1" id="Grading">
+                                        <apex:selectOptions value="{!gradings}"/>
+                                    </apex:selectList>
+                                </td>
+                            </tr>
+                            <!--Row 3-->
+                            <tr >
+                                <td>
+                                    <b>Priority/KPI:&nbsp;</b>
+                                </td>
+                                <td>
+                                    <apex:selectList value="{!selectedPriorityKpi}" multiselect="false" size="1" id="priorityFilter" onchange="populatenewobjectives()">
+                                        <apex:selectOptions value="{!priorityKpi}"/>
+                                    </apex:selectList>
+                                </td>
+                                <td>
+                                    <b>Task Status:&nbsp;</b>
+                                </td>
+                                <td>
+                                    <apex:selectList value="{!selectedtaskStatus}" multiselect="false" size="1" id="taskStatusfilter">
+                                        <apex:selectOptions value="{!taskStatus}"/>
+                                    </apex:selectList>
+                                </td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                        </table>
+                       </td>
+                      </tr>
+                      </table>
+                      <table>
+                        <tr>
+                            <td>
+                                &nbsp;
+                            </td>
+                        </tr>
+                    </table>
+                    <table cellspacing="0" cellpadding="0" id="filterTable">
+                        <tr>
+                            <td style="padding-left:20px;">
+                                <table id="innerFilterTable"   class="tdData windowWidth">
+                                <tr>
+                             <td class="tdData" colspan="6" style="text-align:center;">
+                                {!$Label.numberofoutletsperpage}: <apex:selectList value="{!recordsPerPage}" multiselect="false" size="1" onchange="openLoadingdialog();search();">
+                                            <apex:selectOptions value="{!numberOfOutlets}"/>
+                                        </apex:selectList>
+                                Banner Group: <apex:inputCheckbox value="{!bannerGrpFlag}" />
+                                &nbsp;&nbsp;&nbsp;&nbsp;
+                                City: <apex:inputCheckbox value="{!cityFlag}" />
+                                &nbsp;&nbsp;&nbsp;&nbsp;
+                                Post Code: <apex:inputCheckbox value="{!postCodeFlag}" />
+                                &nbsp;&nbsp;&nbsp;&nbsp;
+                                Volume (9LE - Current Year): <apex:inputCheckbox value="{!volumeFlag}" />
+                                &nbsp;&nbsp;&nbsp;&nbsp;
+                                Grading: <apex:inputCheckbox value="{!gradingFlag}" />
+                               <apex:commandButton value="  Show/Hide  " action="{!showHide}" rerender="PlanningGrid,totalCallsRowPanel" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();"/> 
+                               </td>
+                               <td>&nbsp;</td>
+                               <td>                                                        
+                               </td>
+                       </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        
+                    </table>
+                    <table>
+                        <tr>
+                            <td>
+                                &nbsp;
+                            </td>
+                        </tr>
+                    </table>
+                    <table id="innerFilterTable" class="windowWidth">
+                           <thead align = "center" >
+                                <tr>
+                                    <td  colspan="6" style="text-align:center"> 
+                                        <apex:commandButton value="    Save    " action="{!saveTasks}" onclick="openLoadingdialog();"  rerender="PlanningGrid,totalCallsRowPanel,error" oncomplete="destroyLoadingDialog();"/>&nbsp;&nbsp;                           
+                                       
+                                        <apex:commandButton value="   Cancel   " action="{!cancel}" rerender="PlanningGrid" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();"/>&nbsp;&nbsp;
+                                        
+                                        <input type="button" name="Export1" value="Export to Excel" onclick="callExport();" class="btn"/>&nbsp;&nbsp;
+                                        <apex:commandButton value="Send email to Manager" action="{!sentMailToManager}" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();" rerender="error,PlanningGrid"/>&nbsp;&nbsp;
+                                        
+                                    </td>
+                                </tr>
+                            </thead>
+                     </table> 
+            <br/>
+            <div style="width:660px;margin:0px auto;">
+                <apex:pageMessages id="error"/>
+            </div>
+            <apex:variable value="{!1}" var="columnCount"/>
+                <apex:outputPanel id="PlanningGrid" rendered="true">
+                    <apex:outputPanel id="PlanningGrid1" rendered="{!displayResults}">
+                    <table cellspacing="0" cellpadding="0" id="PlanningTable" class="allBorder" style="width:100%">
+                        <thead> 
+                            <tr>
+                                <th id="outlet" class="PTheaderColumn tdHeaderLabel">  
+                                    <apex:commandLink value="Outlet" action="{!sortAccount}" id="outletSort" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();return confirmAddDel({!taskAddedDeleted});" styleClass="sorttablelinks" rerender="PlanningGrid,error,totalCallsRowPanel" >
+                                        <apex:param name="currentSortField" value="Outlet" assignTo="{!currentSortField}"/>
+                                    </apex:commandLink>
+                                </th>
+                                
+                                <apex:outputText rendered="{!bannerGrpFlag}">
+                                     <th id="bannerGroup" class="PTheaderColumn tdHeaderLabel"> 
+                                         <apex:variable var="columnCount" value="{!columnCount + 1}"/>
+                                         <apex:commandLink value="Banner Group"  action="{!sortAccount}" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();return confirmAddDel({!taskAddedDeleted});" id="bannerGroupSort" styleClass="sorttablelinks" rerender="PlanningGrid,error,totalCallsRowPanel" >
+                                             <apex:param name="currentSortField" value="BannerGroup" assignTo="{!currentSortField}"/>
+                                         </apex:commandLink>
+                                     </th>
+                                </apex:outputText>
+                                
+                                 <apex:outputText rendered="{!cityFlag}">
+                                    <th id="suburb" class="PTheaderColumn tdHeaderLabel">     
+                                       <apex:variable var="columnCount" value="{!columnCount + 1}"/>
+                                       <apex:commandLink value="City" action="{!sortAccount}" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();return confirmAddDel({!taskAddedDeleted});" id="suburbSort" styleClass="sorttablelinks" rerender="PlanningGrid,error,totalCallsRowPanel" >
+                                           <apex:param name="currentSortField" value="City" assignTo="{!currentSortField}"/>
+                                       </apex:commandLink>
+                                    </th>
+                                </apex:outputText>
+                                
+                                <apex:outputText rendered="{!postCodeFlag}">
+                                   <apex:variable var="columnCount" value="{!columnCount + 1}"/>
+                                   <th id="postcode" class="PTheaderColumn tdHeaderLabel">            
+                                       <apex:commandLink value="Post Code" action="{!sortAccount}" id="postCodeSort" onclick="openLoadingdialog();" styleClass="sorttablelinks" rerender="PlanningGrid,totalCallsRowPanel,error" oncomplete="destroyLoadingDialog();return confirmAddDel({!taskAddedDeleted});">
+                                           <apex:param name="currentSortField" value="postCode" assignTo="{!currentSortField}"/>
+                                       </apex:commandLink>
+                                   </th>
+                                </apex:outputText>
+                                
+                                <apex:outputText rendered="{!volumeFlag}">
+                                    <apex:variable var="columnCount" value="{!columnCount + 1}"/>
+                                    <th id="Volume"  class="PTheaderColumn tdHeaderLabel">     
+                                         <apex:commandLink value="Volume (9LE - Current Year)" action="{!sortAccount}" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();return confirmAddDel({!taskAddedDeleted});" id="VolumeSort" styleClass="sorttablelinks" rerender="PlanningGrid,error,totalCallsRowPanel" >
+                                             <apex:param name="currentSortField" value="Volume" assignTo="{!currentSortField}"/>
+                                         </apex:commandLink>
+                                    </th>
+                                </apex:outputText>
+                                 
+                                <apex:outputText rendered="{!gradingFlag}">
+                                    <apex:variable var="columnCount" value="{!columnCount + 1}"/>
+                                    <th id="Grading"  class="PTheaderColumn tdHeaderLabel">     
+                                        <apex:commandLink value="Grading" action="{!sortAccount}" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();return confirmAddDel({!taskAddedDeleted});" id="GradingSort" styleClass="sorttablelinks" rerender="PlanningGrid,error,totalCallsRowPanel" >
+                                            <apex:param name="currentSortField" value="Grading" assignTo="{!currentSortField}"/>
+                                        </apex:commandLink>
+                                    </th>  
+                                </apex:outputText>
+                                  
+                                <apex:repeat value="{!sortedObjectivesList}" var="objectiveId">
+                                    <th id="{!objectiveId}" class="PTheaderColumn tdRedHeaders">
+                                       <div style="float:right;vertical-align:top;margin-top:0;padding-right:3px;">
+                                            <apex:commandButton action="{!addAllTasks}" rendered="{!displayAddButton}" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();" image="{!$Resource.CreateTaskIcon}" rerender="PlanningGrid,error" styleClass="iconButton PlanningTablebtn" style="background-color:rgb(198,12,48) !important">
+                                                <apex:param name="objectiveId" value="{!objectiveId}" assignTo="{!objectiveId}"/>
+                                            </apex:commandButton>
+                                            <apex:commandButton action="{!removeAllTasks}" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();" image="{!$Resource.DeleteTaskIcon}" rendered="{!displayAddButton}" rerender="PlanningGrid,error" styleClass="iconButton PlanningTablebtn" style="background-color:rgb(198,12,48) !important">
+                                                <apex:param name="objectiveId" value="{!objectiveId}" assignTo="{!objectiveId}"/>
+                                            </apex:commandButton>
+                                         </div>
+                                        <div style="text-align:left;margin-top:0;width:120px;padding:2px;" class="wordwrap">
+                                            <apex:commandLink style="color:white" onclick="openLoadingdialog();" rerender="error,objectiveInfoPanel" action="{!objectiveInfo}" oncomplete="destroyLoadingDialog(),objectiveInformation();" value="{!currentObjectivesMap[objectiveId].Name}">
+                                                <apex:param name="objectiveId" value="{!objectiveId}" assignTo="{!objectiveIdClicked}" />
+                                            </apex:commandLink>
+                                        </div>
+                                 
+                                    </th>
+                                    <apex:variable var="columnCount" value="{!columnCount + 1}"/>
+                                </apex:repeat>
+                            </tr>
+                        </thead> 
+                        
+                        <tbody>
+                            <apex:repeat value="{!accounts}" var="acc">
+                                <tr>
+                                    <th class="tdData PlanningTabletd">
+                                        <div style="float:right;vertical-align:top;margin-top:0;width:100%;">
+                                        <apex:commandButton style="padding:0px !important;height:16px;width:16px;border:0px !important;float:right;" image="{!$Resource.Address}" onclick="openLoadingdialog();" rerender="error,addressPanel" action="{!addressInfo}"  oncomplete="destroyLoadingDialog(),addressInformation();" >
+                                            <apex:param name="accAddressId" value="{!acc.Id}" assignTo="{!accAddressId}" />
+                                        </apex:commandButton>
+                                        </div>
+                                        <apex:outputlink style="vertical-align:middle" styleClass="outletNameLink" target="_blank" value="/{!acc.Id}" >
+                                            <apex:outputText value="{!acc.Name}" style="text-wrap:none"/>
+                                        </apex:outputlink>  
+                                        
+                                    </th>
+                                    <apex:outputText rendered="{!bannerGrpFlag}" >
+                                        <td  style="vertical-align:middle" class="tdData PlanningTabletd">
+                                           {!acc.Banner_Group_Name__c}
+                                        </td>
+                                    </apex:outputText> 
+                                    <apex:outputText rendered="{!cityFlag}" > 
+                                       <td style="vertical-align:middle" class="tdData PlanningTabletd"> 
+                                           {!acc.BillingCity}
+                                       </td> 
+                                    </apex:outputText>     
+                                    <apex:outputText rendered="{!postCodeFlag}">
+                                        <td style="vertical-align:middle" class="tdData PlanningTabletd"> 
+                                           {!acc.BillingPostalCode}
+                                        </td> 
+                                    </apex:outputText>
+                                    <apex:outputText rendered="{!volumeFlag}" >
+                                        <td style="vertical-align:middle" class="tdData PlanningTabletd">
+                                           {!acc.Volume__c}
+                                        </td>
+                                    </apex:outputText> 
+                                    <apex:outputText rendered="{!gradingFlag}" >
+                                        <td style="vertical-align:middle" class="tdData PlanningTabletd">
+                                             {!acc.Account_Grading__c}
+                                        </td>
+                                    </apex:outputText>
+                                    <apex:repeat value="{!sortedObjectivesList}" var="objectiveId">
+                                        <td class="PlanningTabletd">
+                                            <div style="float:right;vertical-align:top;margin-top:0;">
+                                                 <!-- <apex:commandButton action="{!displayCallPlanningTasks}" rendered="{!displayAddButton}" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();selectActivityDate();" image="{!$Resource.CreateTaskIcon}" rerender="callVisitTaskPanel,error" styleClass="iconButton PlanningTablebtn" style="background-color:white"> -->
+                                            
+                                                 <apex:commandButton action="{!addTasks}" rendered="{!displayAddButton}" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();" image="{!$Resource.CreateTaskIcon}" rerender="PlanningGrid,error" styleClass="iconButton PlanningTablebtn" style="background-color:white">
+                                                    <apex:param name="accId" value="{!acc.Id}" assignTo="{!accId}"/>
+                                                    <apex:param name="objectiveId" value="{!objectiveId}" assignTo="{!objectiveId}"/>
+                                                 </apex:commandButton>
+                                                 <apex:commandButton action="{!removeTasks}" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();" image="{!$Resource.DeleteTaskIcon}" rendered="{!displayAddButton}" rerender="PlanningGrid,error" styleClass="iconButton PlanningTablebtn" style="background-color:white">
+                                                    <apex:param name="accId" value="{!acc.Id}" assignTo="{!accId}"/>
+                                                    <apex:param name="objectiveId" value="{!objectiveId}" assignTo="{!objectiveId}"/>
+                                                </apex:commandButton>
+                                            </div>
+                                            <apex:outputText rendered="{!displayAddButton}"><br/></apex:outputText>
+                                            <ul>
+                                                <apex:repeat value="{!tasksMap[''+acc.Id+'#'+objectiveId]}" var="task">
+                                                    <li>
+                                                        <apex:outputText rendered="{!if(ISNULL(task.Id), false, true)}">
+                                                            <a style="color:{!IF(AND(task.ActivityDate < todaysDate, task.Status != 'Executed'),'red',IF(task.Status == 'Re- Allocated','Green',if(task.Status=='Executed','blue','black')))};font-weight:bold;" target="_blank" href="/{!task.Id}">
+                                                               <apex:outputText value="{!task.Status}"/>
+                                                            </a>
+                                                        </apex:outputText>
+                                                        <apex:outputText rendered="{!if(ISNULL(task.Id), true, false)}">
+                                                            <apex:outputText value="{!task.Status}"
+                                                             style="color:{!IF(AND(task.ActivityDate < todaysDate, task.Status != 'Executed'),'red',IF(task.Status == 'Re- Allocated','Green',if(task.Status=='Executed','blue','black')))};font-weight:bold;"/>
+                                                        </apex:outputText>
+                                                    </li>
+                                                </apex:repeat>
+                                            </ul>
+                                        </td>
+                                    </apex:repeat>
+                                </tr>
+                            </apex:repeat>   
+                            <tr>
+                                <th style="height: 30px;" class="PlanningTabletd"></th>
+                                <td style="height: 30px;" colspan="{!FLOOR(columnCount)-1}" class="PlanningTabletd">&nbsp;
+                                </td>
+                            </tr>
+                            <tr>
+                                <apex:outputText rendered="{!bannerGrpFlag}" ><td style="height: 30px;" class="PlanningTabletd"> </td></apex:outputText>
+                                <apex:outputText rendered="{!cityFlag}" ><td style="height: 30px;" class="PlanningTabletd"></td></apex:outputText>
+                                <apex:outputText rendered="{!volumeFlag}" ><td style="height: 30px;" class="PlanningTabletd"></td></apex:outputText>
+                                <apex:outputText rendered="{!gradingFlag}" ><td style="height: 30px;" class="PlanningTabletd"></td></apex:outputText>
+                                <apex:outputText rendered="{!postCodeFlag}" ><td style="height: 30px;" class="PlanningTabletd"></td></apex:outputText>
+                                <td style="height: 30px;" class="PlanningTabletd">Total Objectives Assigned</td>
+                                <apex:repeat value="{!sortedObjectivesList}" var="objectiveId">
+                                    <td style="height: 30px;" class="PlanningTabletd"> <apex:inputField value="{!statsMap[objectiveId].Total_Allocation__c}" /></td>
+                                </apex:repeat>
+                            </tr> 
+                           
+                            <tr >
+                                <apex:outputText rendered="{!bannerGrpFlag}" ><td style="height: 30px;" class="PlanningTabletd"></td></apex:outputText>
+                                <apex:outputText rendered="{!cityFlag}" ><td style="height: 30px;" class="PlanningTabletd"></td></apex:outputText>
+                                <apex:outputText rendered="{!volumeFlag}" ><td style="height: 30px;" class="PlanningTabletd"></td></apex:outputText>
+                                <apex:outputText rendered="{!gradingFlag}" ><td style="height: 30px;" class="PlanningTabletd"></td></apex:outputText>
+                                <apex:outputText rendered="{!postCodeFlag}" ><td style="height: 30px;" class="PlanningTabletd"></td></apex:outputText>
+                                <td style="height: 30px;" class="PlanningTabletd">Total Objectives Allocated &amp; Pending</td>
+                                <apex:repeat value="{!sortedObjectivesList}" var="objectiveId">
+                                    <td style="height: 30px;" class="PlanningTabletd">{!noOfObjAllocReallocPending[objectiveId]}</td>
+                                </apex:repeat>
+                            </tr> 
+                            
+                            <tr >
+                                <apex:outputText rendered="{!bannerGrpFlag}" ><td style="height: 30px;" class="PlanningTabletd"></td></apex:outputText>
+                                <apex:outputText rendered="{!cityFlag}" ><td style="height: 30px;" class="PlanningTabletd"></td></apex:outputText>
+                                <apex:outputText rendered="{!volumeFlag}" ><td style="height: 30px;" class="PlanningTabletd"></td></apex:outputText>
+                                <apex:outputText rendered="{!gradingFlag}" ><td style="height: 30px;" class="PlanningTabletd"></td></apex:outputText>
+                                <apex:outputText rendered="{!postCodeFlag}" ><td style="height: 30px;" class="PlanningTabletd"></td></apex:outputText>
+                                <td style="height: 30px;" class="PlanningTabletd">Total Objectives Executed </td>
+                                <apex:repeat value="{!sortedObjectivesList}" var="objectiveId">
+                                    <td style="height: 30px;" class="PlanningTabletd">{!noOfObjExecuted[objectiveId]}</td>
+                                </apex:repeat>
+                            </tr> 
+                            
+                            <tr >
+                                <apex:outputText rendered="{!bannerGrpFlag}" ><td style="height: 30px;" class="PlanningTabletd"></td></apex:outputText>
+                                <apex:outputText rendered="{!cityFlag}" ><td style="height: 30px;" class="PlanningTabletd"></td></apex:outputText>
+                                <apex:outputText rendered="{!volumeFlag}" ><td style="height: 30px;" class="PlanningTabletd"></td></apex:outputText>
+                                <apex:outputText rendered="{!gradingFlag}" ><td style="height: 30px;" class="PlanningTabletd"></td></apex:outputText>
+                                <apex:outputText rendered="{!postCodeFlag}" ><td style="height: 30px;" class="PlanningTabletd"></td></apex:outputText>
+                                <td style="height: 30px;" class="PlanningTabletd">Total Objectives Remaining</td>
+                                <apex:repeat value="{!sortedObjectivesList}" var="objectiveId">
+                                    <td style="height: 30px;" class="PlanningTabletd">{!noOfObjRemaining[objectiveId]}</td>
+                                </apex:repeat>
+                            </tr>  
+                             
+                        </tbody>
+                    </table>
+                    <script type="text/javascript">
+                        var $ = jQuery.noConflict(); 
+                        $('#PlanningTable').tinytbl({
+                            direction: 'ltr',
+                            thead:     true,
+                            tfoot:     false,
+                            cols:      1,
+                            width:     window.innerWidth-50,
+                            height:    {!if(setCon.ResultSize >= 4,500,if(setCon.ResultSize=3,445,(if(setCon.ResultSize=2,375,if(setCon.ResultSize=1,305,240)))))},
+                            renderer:  true
+                        });
+                    </script>
+                </apex:outputPanel>
+            </apex:outputPanel>
+            <br/>
+            <apex:outputPanel id="totalCallsRowPanel">
+                <table cellspacing="0" cellpadding="0" id="totalCallsRow"  class="windowWidth">                       
+                        <apex:outputText rendered="{!totalPages > 1}">
+                            <tr>
+                                <td colspan="{!FLOOR(columnCount)}">
+                                    <apex:outputPanel id="pagination" rendered="{!displayResults}">
+                                        <div style="float:left;width:10%;white-space: nowrap;"> <b>Page:</b><br/>{!setCon.PageNumber} of {!totalPages}</div>
+                                        <div style="float:left;text-align:center;width:80%">
+                                            <apex:commandButton value="  |<  " action="{!first}" disabled="{!Not(setCon.HasPrevious)}" rerender="PlanningGrid,pagination,totalCallsRowPanel" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();"/> &nbsp;
+                                            
+                                             <apex:commandButton value="  <  " action="{!previous}" disabled="{!Not(setCon.HasPrevious)}" rerender="PlanningGrid,pagination,totalCallsRowPanel" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();"/>  &nbsp;
+                                            
+                                            <apex:commandButton value="  >  " action="{!next}" disabled="{!Not(setCon.HasNext)}" rerender="PlanningGrid,pagination,totalCallsRowPanel" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();"/>  &nbsp;
+                                            
+                                            <apex:commandButton value="  >|  " action="{!last}" disabled="{!Not(setCon.HasNext)}" rerender="PlanningGrid,pagination,totalCallsRowPanel" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();"/>
+                                        </div>
+                                        <div style="float:right;width:10%px;white-space: nowrap;"><b>Page:</b><br/>{!setCon.PageNumber} of {!totalPages}</div>
+                                    </apex:outputPanel>
+                                </td>
+                            </tr>
+                        </apex:outputText>
+                </table>
+            </apex:outputPanel> 
+            <table class="windowWidth">
+                <tr>
+                    <td colspan="{!FLOOR(columnCount)}">
+                        <div style="text-align:center;">
+                            <apex:commandButton value="    Save    " action="{!saveTasks}" onclick="openLoadingdialog();"  rerender="PlanningGrid,totalCallsRowPanel,error" oncomplete="destroyLoadingDialog();"/>&nbsp;&nbsp;                           
+                            <apex:commandButton value="   Cancel   " action="{!cancel}" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();" rerender="PlanningGrid"/>&nbsp;&nbsp;                           
+                            <!-- <apex:commandButton value="Export to Excel" action="{!downloadExcel}" rerender="PlanningGrid"/> -->
+                            <input type="button" name="Export" value="Export to Excel" onclick="callExport();" class="btn"/>
+                            &nbsp;&nbsp;
+                            <apex:commandButton value="Send email to Manager" action="{!sentMailToManager}" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();" rerender="error,PlanningGrid"/>&nbsp;&nbsp;
+                        </div>
+                    </td>
+                 </tr> 
+            </table>
+            <br/>
+            <apex:outputPanel id="callVisitTaskPanel" style="display: none">
+                <div id="callVisitTaskDialog" title="Call Visit Tasks" style="color: white;">   
+                    <table border="1" class="callVisitTasks">
+                        <thead>
+                            <tr>
+                                <th>Week</th>
+                                <th>Day</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                                <th>Select</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <apex:repeat var="task" value="{!taskList}">
+                            <tr>
+                                <td>
+                                    {!if(ISBLANK(task.Subject),'',Right(task.Subject,1))}
+                                </td>
+                                <td>
+                                    {!task.Day__c}
+                                </td>
+                                <td>
+                                    <apex:outputText value="{0,date,dd'-'MM'-'yyyy}">
+                                        <apex:param value="{!task.ActivityDate}" /> 
+                                    </apex:outputText>
+                                </td>
+                                <td>
+                                    {!task.Status}
+                                </td>
+                                <td>
+                                    <input type="radio" name="selectedActivityDate" value="{!if(ISBLANK(task.Id),'New',task.Id)}"/>
+                                </td>
+                            </tr>
+                        </apex:repeat>
+                        </tbody>
+                    </table>
+                </div>
+            </apex:outputPanel> 
+            <apex:outputPanel id="addressPanel" style="display: none">
+                <div id="addressDialog" title="Address Information" style="color: white;">                
+                    <table>
+                    <tr>
+                            <td>
+                                <b>Name: </b>
+                            </td>
+                            <td>
+                                 <b><apex:OutputText value="{!AccAddress.Name}"  id="AccountName"/></b>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                Billing Street : 
+                            </td>
+                            <td>
+                                 <apex:OutputText value="{!AccAddress.BillingStreet}"  id="billingStreet"/>
+                            </td>
+                        </tr>                           
+                        <tr>
+                            <td>
+                                Billing City: 
+                            </td>
+                            <td>
+                                <apex:OutputText value="{!AccAddress.BillingCity}"  id="billingCity"/>
+                            </td>
+                        </tr>
+                                                
+                        <tr>
+                            <td>
+                                Billing State/Province:
+                            </td>
+                            <td>
+                                <apex:OutputText value="{!AccAddress.BillingState}"  id="BillingState"/>
+                            </td>
+                        </tr>
+                                               
+                        <tr>
+                            <td>
+                                Billing Zip/Postal Code: 
+                            </td>
+                            <td>
+                                <apex:OutputText value="{!AccAddress.BillingPostalCode}"  id="BillingPostCode"/>
+                            </td>
+                        </tr>                           
+                        <tr>
+                            <td>
+                                Billing Country: 
+                            </td>
+                            <td>
+                                 <apex:OutputText value="{!AccAddress.BillingCountry}"  id="BillingCountry"/>
+                            </td>
+                        </tr>
+                    </table> 
+                   
+                </div>
+            </apex:outputPanel>
+            <apex:outputPanel id="objectiveInfoPanel" style="display: none">
+                <div id="objectiveDialog" title="Objective Information" style="color: white;">                
+                    <table>
+                    <tr>
+                            <td>
+                                <b>Objective Name: </b>
+                            </td>
+                            <td>
+                                 <b><apex:OutputText value="{!objectiveInformation.Name}"  id="ObjectiveName"/></b>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                Execution Standard: 
+                            </td>
+                            <td>
+                                 <apex:OutputText value="{!objectiveInformation.Execution_Standard__c}"  id="executionstandard"/>
+                            </td>
+                        </tr>                           
+                        <tr>
+                            <td>
+                                Support Deal: 
+                            </td>
+                            <td>
+                                <apex:OutputText value="{!objectiveInformation.Support_Deal__c}" id="supportdeal"/>
+                            </td>
+                        </tr>
+                    </table> 
+                </div>
+            </apex:outputPanel>                     
+        </apex:form>
+    </apex:pageBlock>
+    <apex:outputPanel rendered="{!NOT(countryFound)}" style="width:400px;margin:0px auto;">
+        <apex:pageMessages id="globalError" />
+    </apex:outputPanel>  
+    <div id="loading-message" title="Loading...." style="height:175px;">
+        <img src="{!$Resource.AjaxAnimation}"/>
+    </div>
+    <div class="slide-out-divcp">
+        <a class="handle" href="http://link-for-non-js-users.html">Content</a>
+         <B>Status:</B><br/>
+         <img src="{!$Resource.Red}" height="30px"/>&nbsp;Incomplete Task<br/>
+         <img src="{!$Resource.Black}" height="30px"/>&nbsp;Allocated, Pending &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+         <img src="{!$Resource.Green}" height="30px"/>&nbsp;Re-Allocated<br/>
+         <img src="{!$Resource.Blue}" height="30px"/>&nbsp;Executed
+    </div>
+    <script type="text/javascript">
+    
+        /*bind click events and initialize dialogs on Document ready*/
+       
+        $(document).ready(function() {
+            /*Hide Dialog initially*/
+            $("#displayTaskInfo").hide();
+            $("#loading-message").hide();
+            $(".windowWidth").css('width',''+(window.innerWidth-90)+'px');
+        });
+
+
+    </script>    
+            
+</apex:page>

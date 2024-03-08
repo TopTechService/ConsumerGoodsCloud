@@ -1,0 +1,1046 @@
+<!--
+ * @author    : Created by Manish Damle on 12 Apr, 2013  manish.damle@arxxus.com
+ * @Purpose   : Call Planning Page for AUS.
+ * @Criteria  : 
+ * @Modified  : 10 Apr, 2013 Modified by Debashish Dinda, debashish.dinda@arxxus.com
+                20 Apr, 2013 Modified by Geeta Kushwaha, geeta.kushwaha@arxxus.com  
+ *-->
+<apex:page sidebar="false" showHeader="true" id="page" controller="CallVisitPlanController" tabstyle="Call_Planning_Lightning__tab" cache="false" language="{!$CurrentPage.parameters.lang}">
+    <head>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    </head>
+    <!--Load Javascripts from Google Repo and Static Resources Site-->
+    <apex:stylesheet value="{!$Resource.JQueryUICSS}"/>
+    <!--<script language="javascript" type="text/javascript"  src="//ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script>
+    <script language="javascript" type="text/javascript"  src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.2/jquery-ui.min.js"></script>-->
+    <apex:includeScript value="{!URLFOR($Resource.jquery, '/jquery/js/jquery.min.2.0.0.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jquery, '/jquery/js/jquery-ui-1.10.2.custom.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jquery, '/jquery/js/jquery-freezeheader.js')}"/>
+    <apex:includeScript value="{!$Resource.slideout}" />
+    <script type="text/javascript">
+
+        var $j = jQuery.noConflict(); 
+        
+         function openLoadingdialog(){
+            $j("#loading-message").dialog({  
+                draggable:false,
+                resizable:false,
+                closeOnEscape: false,
+                open: function(event, ui) { $j(".ui-dialog-titlebar-close").hide();$j(".ui-dialog-titlebar").hide();},
+                modal: true,
+                width:200,
+                height:175
+            });
+        }
+        
+        function destroyLoadingDialog(){
+            $j("#loading-message").dialog("close" );
+            $j(".ui-dialog-titlebar").show();
+        }       
+       
+         $j(function(){
+        $j('.slide-out-divcp').tabSlideOut({
+            tabHandle: '.handle',                     //class of the element that will become your tab
+            pathToTabImage: '{!$Resource.HelpIcon}', //path to the image for the tab //Optionally can be set using css
+            imageHeight: '122px',                     //height of tab image           //Optionally can be set using css
+            imageWidth: '40px',                       //width of tab image            //Optionally can be set using css
+            tabLocation: 'left',                      //side of screen where tab lives, top, right, bottom, or left
+            speed: 300,                               //speed of animation
+            action: 'click',                          //options: 'click' or 'hover', action to trigger animation
+            topPos: '178px',                          //position from the top/ use if tabLocation is left or right
+            leftPos: '20px',                          //position from left/ use if tabLocation is bottom or top
+            fixedPosition: false                      //options: true makes it stick(fixed position) on scroll
+        });
+
+    });
+       
+        function addEvent(_id, buttonId) { 
+                
+                
+                $j(function() {                    
+                    $j('[id="'+ buttonId + '"]').parent().closest('td').find('a').each(function() { 
+                        var hyperText   = $j(this).text();
+                        if(hyperText == '{!$Label.mon}'){
+                          document.getElementById('{!$Component.mainblock.mainform.mon}').checked = true;
+                        }
+                        else if(hyperText == '{!$Label.tue}'){
+                            document.getElementById('{!$Component.mainblock.mainform.tue}').checked = true;
+                        }
+                        else if(hyperText == '{!$Label.wed}'){
+                            document.getElementById('{!$Component.mainblock.mainform.wed}').checked = true;
+                        }
+                        else if(hyperText == '{!$Label.thu}'){
+                            document.getElementById('{!$Component.mainblock.mainform.thu}').checked = true;
+                        }
+                        else if(hyperText == '{!$Label.fri}'){
+                            document.getElementById('{!$Component.mainblock.mainform.fri}').checked = true;
+                        }
+                        else if(hyperText == '{!$Label.sat}'){
+                            document.getElementById('{!$Component.mainblock.mainform.sat}').checked = true;
+                        }
+                        else if(hyperText == '{!$Label.sun}'){
+                            document.getElementById('{!$Component.mainblock.mainform.sun}').checked = true;
+                        }
+                    });
+                });
+                var linkId = _id;
+                var Id = linkId.split('-');                
+                console.log(' Id   '+Id);
+                /*Send Ajax Call to controller and create event. Calls saveevent function*/
+                $j("#createEventDialog").dialog({
+                    open: function(event, ui) { $j(".ui-dialog-titlebar-close").hide();},
+                    modal:true,       
+                    width:<apex:outputText rendered="{!if(userLocation=='australia', true, false)}" value="380"/>,
+                    buttons: [{
+                        text: "{!$Label.ok}",
+                        click: function () {
+                            $j(this).dialog('close');
+                            openLoadingdialog(); 
+                            var mon = document.getElementById('{!$Component.mainblock.mainform.mon}').checked;
+                            var tue = document.getElementById('{!$Component.mainblock.mainform.tue}').checked;
+                            var wed = document.getElementById('{!$Component.mainblock.mainform.wed}').checked;
+                            var thu = document.getElementById('{!$Component.mainblock.mainform.thu}').checked;
+                            var fri = document.getElementById('{!$Component.mainblock.mainform.fri}').checked;
+                            var sat = sun = false;
+                            if(document.getElementById('{!$Component.mainblock.mainform.sat}'))
+                               sat = document.getElementById('{!$Component.mainblock.mainform.sat}').checked;
+                            if(document.getElementById('{!$Component.mainblock.mainform.sun}'))  
+                               sun = document.getElementById('{!$Component.mainblock.mainform.sun}').checked;
+                            var link = linkId.split('-');
+                            addTempEvent(link[0], link[1],mon,tue,wed,thu,fri,sat,sun,document.getElementById('EventDescription').value); 
+                            clearEventDetails();
+                        },
+                    },{
+                        text: "{!$Label.cancel}",
+                        click: function () {
+                           $j(this).dialog('close'); 
+                           clearEventDetails();
+                        },
+                    }]
+                });
+        } 
+        
+        
+        function addressInformation() {                
+                /*Send Ajax Call to controller and create Event. Calls saveEvent function*/
+                $j("#addressDialog").dialog({
+                    open: function(event, ui) { $j(".ui-dialog-titlebar-close").show();},
+                    
+                    modal:true,       
+                    width:430,
+                   
+                });
+        } 
+        
+        function confirmAddDel(showDialog){
+            if(showDialog){
+                var result = confirm('Few Events have been added/deleted. Click OK to discard changes and Cancel to save.');
+                openLoadingdialog();
+                setClear(result);
+                
+            }  
+            return true;
+                                    
+        }  
+        
+       
+        function confirmDelete(weekName){
+           var result = confirm('Do you want to delete all the incomplete Call Visit Events?');
+           if(result) {
+               openLoadingdialog();
+               setDeleteConfirm(result,weekName);
+               
+           }   
+           
+        } 
+    
+    </script>
+    
+    <style>
+        .slide-out-divcp {
+              padding: 20px;
+              width: 315px;
+              background: rgb(173,182,212);
+              border: 2px solid #29216d;
+          }      
+        .PlanningTablebtn {
+            background:white !important;
+        }
+        .iconButton{
+            padding:0px !important;
+            height:16px;
+            width:16px;
+            border:0px !important;
+            background-color:white !important;
+        }
+        .ui-dialog-titlebar {
+            background-color: rgb(0,62,126) !important;
+            background-image: none;
+            color: #000;
+        }
+        .ui-dialog, .ui-dialog-title {
+            color: white;
+        }
+        .ui-state-default, .ui-widget-content .ui-state-default, .ui-widget-header .ui-state-default {
+            background-color: white !important;
+        }
+        
+        body {
+            background-color:white; 
+            font-family:"Arial";
+        }
+        ul {
+            list-style:none;
+            text-align:left;
+            padding:0px;
+            margin-top:10px !important;
+            margin-bottom:0 !important;
+        }
+        ul li {
+            text-align:left !important;
+            padding:0px;
+            margin-left:2px !important;
+        }
+        th {
+            font-weight:normal !important;
+        }
+        .tdHeaderLabel a:hover {
+            color:White !important;
+        }
+        table{
+            width:100%;
+           // background-color:white; 
+        }
+        
+        #filterTable td {
+            display: table-cell;
+            width:10%;
+            height:30px;
+        }
+        
+        body .bPageBlock, body #bodyCell .bResource .secondaryPalette, body .secondaryPalette.bPageBlock, body .individualPalette .secondaryPalette.bPageBlock, body .bodyDiv .genericTable, body .genericPageBlockTable, body .bodyDiv .bSubBlock, body .bComponentBlock .bPageBlock, body .bMyDashboard .bPageBlock, body.rlHoverFrame .bPageBlock, body.subjectSelectionPopup div.choicesBox, body.lookupTab .secondaryPalette.bPageBlock, body.popupTab .secondaryPalette.bPageBlock, body.UserTagStatsPage .secondaryPalette.bPageBlock {
+            background-color: white;
+            border-bottom: 1px solid #EAEAEA;
+            border-left: 1px solid #EAEAEA;
+            border-radius: 4px 4px 4px 4px;
+            border-right: 1px solid #EAEAEA;
+        }
+        #PlanningTable td {
+            border-left: 1px solid #ddd;
+            border-top: 1px solid #ddd;
+            display: table-cell;
+            font-size:1em;
+            width:7%;   
+            height:60px;
+            padding:3px;
+            vertical-align: top;
+        }
+        
+        #PlanningTable th{
+            padding: 0px;       
+        }
+        #PlanningTable td div:hover {
+            cursor:pointer;
+        }
+        
+        #PlanningTable td:hover {
+            border:1px solid red;
+        }
+        
+        #PlanningTable .PTheaderColumn {
+            border-left: 1px solid grey;
+            border-bottom: 1px solid black;
+            display: table-cell;
+            height:30px;
+            background-color:#003e7e;
+            font-size:12px;
+            vertical-align: middle;
+            font-weight:bold !important;
+            text-align:center;
+        }
+        
+        #totalCallsRow td{
+            height:30px;
+            border-left: 1px solid #ddd;
+            border-top: 1px solid #ddd;
+            width:7%;
+            padding:3px;
+            font-size:12px;
+        }
+        .completedEvent {
+            color: red !important;
+        }
+        #innerFilterTable td{
+            width:110px !important;
+        }
+        .allBorder {
+            border:1px black solid;
+        }
+        
+        body .bPageBlock, body #bodyCell .bResource .secondaryPalette, body .secondaryPalette.bPageBlock, body .individualPalette .secondaryPalette.bPageBlock, body .bodyDiv .genericTable, body .genericPageBlockTable, body .bodyDiv .bSubBlock, body .bComponentBlock .bPageBlock, body .bMyDashboard .bPageBlock, body.rlHoverFrame .bPageBlock, body.subjectSelectionPopup div.choicesBox, body.lookupTab .secondaryPalette.bPageBlock, body.popupTab .secondaryPalette.bPageBlock, body.UserTagStatsPage .secondaryPalette.bPageBlock {
+            border-bottom: 1px solid #EAEAEA;
+            border-left: 1px solid #EAEAEA;
+            border-radius: 4px 4px 4px 4px;
+            border-right: 1px solid #EAEAEA;
+            border-color: none;
+        }
+       
+        .messageTable {
+            background-color:#ffc!important;
+        }
+        
+        /*Change Dialog Header Color*/
+        .ui-widget-header {
+            background-color:#CDE8F0;
+        }
+        /*set Close button icon*/
+        .ui-icon {
+            background-image: url({!$Resource.JQueryUIIconSet}) !important; /*images/ui-icons_888888_256x240.png) !important;*/
+        }
+        
+         /*Light Blue Color table Data*/
+        .tdData {
+            background-color:rgb(173,182,212);
+           // border:1px black solid;
+        }
+        
+        
+        /*Change Jquery Buttons Color*/
+        .ui-state-default, .ui-widget-content .ui-state-default, .ui-widget-header .ui-state-default {
+            background-color:#CDE8F0;
+        }
+        
+        .btn {
+            background: none repeat scroll 0 0 #003E7E !important;
+            color: white !important;
+        }
+        
+        /*Dark Header Color (Sort)*/
+        .tdHeaderLabel {
+           background-color:rgb(0,62,126)  !important;
+        }
+        /*Sot Link Color*/
+        .tdHeaderLabel a {
+            color:white;
+        }
+        
+        /*Red Week Headers*/
+        .tdRedHeaders {
+            background-color:rgb(198,12,48) !important;
+        }
+        .B_Edit{
+            padding:0px !important;
+            height:18px;
+            width:18px;
+            border:0px !important;
+            float:right;
+            background: none repeat scroll 0 0 transparent !important;
+        } 
+        
+    </style>
+    
+    <apex:pageBlock id="mainBlock">
+        <apex:form id="mainForm" rendered="{!countryFound}"> 
+        
+        <apex:actionFunction name="search" action="{!searchAccounts}" rerender="PlanningGrid,totalCallsRowPanel,error" oncomplete="destroyLoadingDialog();return confirmAddDel({!EventAddedDeleted});"/>
+        
+        <apex:actionFunction name="addTempEvent" rerender="PlanningGrid,error" action="{!addTempEvent}"  oncomplete="destroyLoadingDialog()">
+    
+            <apex:param name="accId" value="" assignTo="{!accId}" />
+                
+            <apex:param name="weekName" value="" assignTo="{!weekName}" />
+            
+            <apex:param name="Mon" value="" assignTo="{!daysCheckBoxList[0]}" />
+            
+            <apex:param name="Tue" value="" assignTo="{!daysCheckBoxList[1]}" />
+            
+            <apex:param name="Wed" value="" assignTo="{!daysCheckBoxList[2]}" />
+            
+            <apex:param name="Thu" value="" assignTo="{!daysCheckBoxList[3]}" />
+            
+            <apex:param name="Fri" value="" assignTo="{!daysCheckBoxList[4]}" />
+            
+            <apex:param name="Sat" value="" assignTo="{!daysCheckBoxList[5]}" />
+            
+            <apex:param name="Sun" value="" assignTo="{!daysCheckBoxList[6]}" />
+            
+            <apex:param name="EventDescription" value="" assignTo="{!EventDescription}" />
+        
+        </apex:actionFunction>
+        
+
+        
+        <apex:actionFunction name="setClear" action="{!searchAccounts}" rerender="PlanningGrid,error,totalCallsRowPanel" oncomplete="destroyLoadingDialog();">
+
+            <apex:param name="clearVal" value="" assignTo="{!clear}" />
+        
+        </apex:actionFunction> 
+        
+        <apex:actionFunction name="setDeleteConfirm" action="{!removeAllEvents}"  rerender="PlanningGrid,error,totalCallsRowPanel" oncomplete="destroyLoadingDialog();">
+
+            <apex:param name="clearVal" value="" assignTo="{!clear}" />
+            
+            <apex:param name="weekName" value="" assignTo="{!weekName}" />
+        
+        </apex:actionFunction> 
+        
+        <apex:actionFunction name="recalculateCallCycles" action="{!recalculateCallCycles}" rerender="CallCycleFilter,error" />
+        
+        <apex:actionFunction name="recalculateWeek" action="{!recalculateWeek}" rerender="WeekFilter,error" oncomplete="destroyLoadingDialog();" />
+        
+        <apex:actionFunction name="recalculateSourceCallCycles" action="{!recalculateSourceCallCycles}" rerender="sourceCallCycle,error" />
+        
+        <apex:actionFunction name="recalculateDestinationCallCycles" action="{!recalculateDestinationCallCycles}" rerender="destinationCallCycle,error" />   
+        
+            <table cellspacing="0" cellpadding="0" id="filterTable" >
+                <tr>
+                    <td colspan="10" style="text-align:left;font-size:16px;font-weight:bold;border-bottom: 1px solid #ddd;">
+                        <apex:image value="{!$Resource.CallPlanningIcon}"/>
+                        {!$Label.callplanning}   
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="10"></td>
+                </tr>
+                 <!-- <apex:outputText rendered="{!if(userLocation=='australia', true, false)}">
+                    <tr>
+                        <td>
+                        <table id="innerFilterTable" style="width:70%;margin:0px auto;" class="tdData">
+                            <tr>
+                                <td colspan="1"><b>Source Call Cycle Year: &nbsp;</b>
+                                    
+                                </td>  
+                                 <td colspan="1">
+                                    <apex:selectList value="{!selectedSourceCallCycleYear}" multiselect="false" size="1" onChange="recalculateSourceCallCycles()">
+                                        <apex:selectOptions value="{!years}"/>
+                                    </apex:selectList>
+                                </td>
+                                <td></td>
+                                 <td colspan="1"><b>New Call Cycle Year: &nbsp;</b>
+                                 </td>  
+                                 <td colspan="1">
+                                    <apex:selectList value="{!selectedNewCallCycleYear}" multiselect="false" size="1" onChange="recalculateDestinationCallCycles()">
+                                        <apex:selectOptions value="{!years}"/>
+                                    </apex:selectList>
+                                </td>
+                                <td>  
+                                    
+                                </td>
+                               
+                            </tr>
+                            <tr>
+                                <td colspan="1"><b>Source Call Cycle:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</b>
+                                 </td>  
+                                 <td colspan="1">
+                                    <apex:selectList value="{!selectedSourceCallCycle}" multiselect="false" size="1" id="sourceCallCycle">
+                                        <apex:selectOptions value="{!sourceCallCycles}"/>
+                                    </apex:selectList>
+                                    
+                                </td>
+           
+                                <td colspan="1">
+                                    <b>New Call Cycle:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</b>
+                                </td>  
+                                 <td colspan="1">
+                                
+                                    <apex:selectList value="{!selectedNewCallCycle}" multiselect="false" size="1" id="destinationCallCycle">
+                                         <apex:selectOptions value="{!destinationCallCycles}"/>
+                                    </apex:selectList>
+                                </td>
+                                
+                                
+                                <td style="height:10px">                              
+                                    
+                                    <apex:commandButton value="  Clone  " action="{!cloneCallCycle}" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();"   rerender="error" style="float:right;" />
+                                </td>
+                            </tr>
+                            
+                        </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="height:20px;"> &nbsp;</td>
+                    </tr>
+                </apex:outputText>-->
+                <tr>
+                    <td colspan="10">
+                        <table id="innerFilterTable" style="width:70%;margin:0px auto;"  class="tdData">
+                            <tr>
+                                <td><!--<apex:commandButton image="{!$Resource.CampariLogo}" action="{!home}" style="padding:0px !important;height:22px;width:70px;border:0px !important;"/>--></td>
+                                <td colspan="4" style="text-align:center;font-size:15px;font-weight:bold;" >{!$Label.filter}&nbsp;<apex:outputText rendered="{!if(userLocation=='australia', true, false)}" value="Outlets By"/></td>
+                                <td><apex:commandButton value="{!$Label.refresh}" action="{!searchAccounts}" rerender="PlanningGrid,totalCallsRowPanel,error" rendered="{!if(userLocation=='australia', true, false)}" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();return confirmAddDel({!EventAddedDeleted});"  style="float:right;" />&nbsp;&nbsp;</td>
+                            </tr>
+                            <!--AUS-->
+                            <apex:outputText rendered="{!if(userLocation=='australia', true, false)}">
+                                <!--Row 1-->
+                                <tr>
+                                    <td>
+                                        <b>Year:&nbsp;</b>
+                                    </td>
+                                    <td >
+                                        <apex:selectList value="{!selectedYear}" multiselect="false" size="1" id="YearFilter" onchange="openLoadingdialog();recalculateCallCycles();recalculateWeek();">
+                                                <apex:selectOptions value="{!years}"/>
+                                        </apex:selectList>
+                                    </td>
+                                    <td>
+                                        <b>Banner Group:&nbsp;</b>
+                                    </td>
+                                    <td>
+                                        <apex:selectList value="{!selectedBanerGroup}" multiselect="false" size="1" id="BannerGroup">
+                                                    <apex:selectOptions value="{!bannerGroups}"/>
+                                        </apex:selectList>
+                                    </td>
+                                    <td>
+                                        <b>Owner:&nbsp;</b>
+                                    </td>
+                                    <td>
+                                        <apex:selectList value="{!selectedOutlet}" multiselect="false" size="1" id="OuletFilter">
+                                            <apex:selectOptions value="{!outlets}"/>
+                                        </apex:selectList>
+                                    </td>
+                                </tr>
+                                <!--Row 2-->
+                                <tr>
+                                    <td>
+                                        <b>Call Cycle:&nbsp;</b>
+                                    </td>
+                                    <td>
+                                        <apex:selectList value="{!selectedCallCycle}" multiselect="false" size="1" id="CallCycleFilter" onchange="openLoadingdialog();recalculateWeek();">
+                                            <apex:selectOptions value="{!callCycles}"/>
+                                        </apex:selectList>
+                                    </td>
+                                    <td>
+                                        <b>Event Status:&nbsp;</b>
+                                    </td>
+                                    <td>
+                                        <apex:selectList value="{!selectedEventStatus}" multiselect="false" size="1" id="EventStatusfilter">
+                                            <apex:selectOptions value="{!EventStatus}"/>
+                                        </apex:selectList>
+                                    </td>
+                                    <td >
+                                        <b>Grading:&nbsp;</b>
+                                    </td>
+                                    <td>
+                                        <apex:selectList value="{!selectedGrading}" multiselect="false" size="1" id="Grading">
+                                            <apex:selectOptions value="{!gradings}"/>
+                                        </apex:selectList>
+                                    </td>
+                                 </tr> 
+                                 <!--Row 3-->
+                                 <tr>
+                                    <td>
+                                        <b>Week:&nbsp;</b>
+                                    </td>
+                                    <td>
+                                        <apex:selectList value="{!selectedWeek}" multiselect="false" size="1" id="WeekFilter">
+                                            <apex:selectOptions value="{!weeks}"/>
+                                        </apex:selectList>
+                                    </td>
+                                    <td>
+                                        <b>Region:&nbsp;</b>
+                                    </td>
+                                    <td>
+                                        <apex:selectList value="{!selectedPostcode}" multiselect="false" size="1" id="PostCode">
+                                            <apex:selectOptions value="{!postCode}"/>
+                                        </apex:selectList>
+                                    </td>
+                                    <td><b>Called On:</b></td><td><apex:inputCheckbox value="{!isCalledOnCheck}" /></td>
+                                </tr>  
+                            </apex:outputText>         
+                        </table>
+                    </td>
+                </tr>
+            </table>
+            <table id="innerFilterTable" style="width:70%;margin:0px auto;">
+                <tr>
+                    <td >
+                        &nbsp;
+                    </td>
+                </tr>
+            </table>
+            <table  id="innerFilterTable" style="width:70%;margin:0px auto;"  class="tdData">
+                <thead align = "center" >
+                     <tr>
+                        <td>
+                            {!$Label.numberofoutletsperpage}: <apex:selectList value="{!recordsPerPage}" multiselect="false" size="1" onchange="openLoadingdialog();search();">
+                                            <apex:selectOptions value="{!numberOfOutlets}"/>
+                                        </apex:selectList>
+                            <apex:outputText rendered="{!if(userLocation=='australia', true, false)}">
+                                Banner Group: <apex:inputCheckbox value="{!bannerGrpFlag}" />
+                                &nbsp;&nbsp;&nbsp;&nbsp;
+                                City: <apex:inputCheckbox value="{!cityFlag}" />
+                                &nbsp;&nbsp;&nbsp;&nbsp;
+                                Post Code: <apex:inputCheckbox value="{!postCodeFlag}" />
+                                &nbsp;&nbsp;&nbsp;&nbsp;
+                                Volume (9LE - Current Year): <apex:inputCheckbox value="{!volumeFlag}" />
+                                &nbsp;&nbsp;&nbsp;&nbsp;
+                            </apex:outputText>
+                            <apex:outputText >
+                                {!$Label.grading}: <apex:inputCheckbox value="{!gradingFlag}" />
+                            </apex:outputText>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                            <apex:commandButton value="{!$Label.show_hide}" action="{!showHide}" rerender="PlanningGrid,totalCallsRowPanel,error" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();"  rendered="{!if(userLocation=='australia', true, false)}"/>
+                        </td>
+                        
+                    </tr>
+                </thead>
+            </table>
+            
+            <br/>
+            <table id="innerFilterTable" style="width:70%;margin:0px auto;" >
+               <thead align = "center" >
+                    <tr>
+                        <td >
+                            <!--  <apex:commandButton value="    {!$Label.save}    " action="{!saveEvents}" onclick="openLoadingdialog();"   rerender="PlanningGrid,totalCallsRowPanel,error" oncomplete="destroyLoadingDialog();"/>&nbsp;&nbsp; -->
+                            <apex:commandButton value="   {!$Label.cancel}   " action="{!cancel}" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();"  rerender="PlanningGrid,totalCallsRowPanel,error"/>&nbsp;&nbsp;
+                            <!--  <apex:commandButton value="{!$Label.sendemailtomanager}" action="{!sentMailToManager}" rerender="error" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();"/>&nbsp;&nbsp; -->
+                            <!--  <apex:commandButton value="Clear" action="{!clearEvent}" onclick="openLoadingdialog();"   rerender="PlanningGrid,error" oncomplete="destroyLoadingDialog();"/>-->
+                        </td>
+                    </tr>
+                </thead>
+            </table>
+            
+            <br/>
+            <div style="width:660px;margin:0px auto;">
+                <apex:pageMessages id="error"/>
+            </div>
+            <apex:variable value="{!1}" var="columnCount"/>
+            <apex:outputPanel id="PlanningGrid">
+                 
+                <table cellspacing="0" cellpadding="0" id="PlanningTable" class="allBorder" >
+                    <thead> 
+                        <tr  >
+                            <th id="outlet" class="PTheaderColumn tdHeaderLabel" >  
+                                <div>
+                                <apex:commandLink value="Outlet" action="{!sortAccount}" id="outletSort" onclick="openLoadingdialog();" styleClass="sorttablelinks" rerender="PlanningGrid,totalCallsRowPanel,error" oncomplete="destroyLoadingDialog();return confirmAddDel({!EventAddedDeleted});">
+                                    <apex:param name="currentSortField" value="Outlet" assignTo="{!currentSortField}"/>
+                                </apex:commandLink>
+                                </div>
+                            </th>
+                          
+                             
+                            <apex:outputText rendered="{!if(userLocation=='australia', true, false)}">
+                                
+                                <apex:outputText rendered="{!bannerGrpFlag}">
+                                    <apex:variable var="columnCount" value="{!columnCount + 1}"/>
+                                    <th id="bannerGroup" class="PTheaderColumn tdHeaderLabel"> 
+                                        <apex:commandLink value="Banner Group"  action="{!sortAccount}" id="bannerGroupSort" onclick="openLoadingdialog();" styleClass="sorttablelinks" rerender="PlanningGrid,totalCallsRowPanel,error" oncomplete="destroyLoadingDialog();return confirmAddDel({!EventAddedDeleted});">
+                                            <apex:param name="currentSortField" value="BannerGroup" assignTo="{!currentSortField}"/>
+                                        </apex:commandLink>
+                                    </th>
+                                </apex:outputText>
+                                
+                                <apex:outputText rendered="{!cityFlag}">
+                                    <apex:variable var="columnCount" value="{!columnCount + 1}"/>
+                                    <th id="suburb" class="PTheaderColumn tdHeaderLabel">            
+                                        <apex:commandLink value="City" action="{!sortAccount}" id="suburbSort" onclick="openLoadingdialog();" styleClass="sorttablelinks" rerender="PlanningGrid,totalCallsRowPanel,error" oncomplete="destroyLoadingDialog();return confirmAddDel({!EventAddedDeleted});">
+                                            <apex:param name="currentSortField" value="City" assignTo="{!currentSortField}"/>
+                                        </apex:commandLink>
+                                    </th>
+                                 </apex:OutputText>
+                                 
+                                 <apex:outputText rendered="{!postCodeFlag}">
+                                    <apex:variable var="columnCount" value="{!columnCount + 1}"/>
+                                    <th id="postcode" class="PTheaderColumn tdHeaderLabel">            
+                                        <apex:commandLink value="Post Code" action="{!sortAccount}" id="postCodeSort" onclick="openLoadingdialog();" styleClass="sorttablelinks" rerender="PlanningGrid,totalCallsRowPanel,error" oncomplete="destroyLoadingDialog();return confirmAddDel({!EventAddedDeleted});">
+                                            <apex:param name="currentSortField" value="postCode" assignTo="{!currentSortField}"/>
+                                        </apex:commandLink>
+                                    </th>
+                                 </apex:OutputText>
+                                 
+                                <apex:outputText rendered="{!volumeFlag}">
+                                    <apex:variable var="columnCount" value="{!columnCount + 1}"/>
+                                    <th id="Volume"  class="PTheaderColumn tdHeaderLabel">     
+                                         <apex:commandLink value="Volume (9LE - Current Year)" action="{!sortAccount}" id="VolumeSort" onclick="openLoadingdialog();" styleClass="sorttablelinks" rerender="PlanningGrid,totalCallsRowPanel,error" oncomplete="destroyLoadingDialog();return confirmAddDel({!EventAddedDeleted});">
+                                             <apex:param name="currentSortField" value="Volume" assignTo="{!currentSortField}"/>
+                                         </apex:commandLink>
+                                    </th>
+                                </apex:OutputText>
+                             </apex:outputText>
+                             <apex:outputText rendered="{!gradingFlag}">
+                                 <th id="Grading"  class="PTheaderColumn tdHeaderLabel">
+                                    <apex:variable var="columnCount" value="{!columnCount + 1}"/>     
+                                    <apex:commandLink value="{!$Label.grading}" action="{!sortAccount}" id="GradingSort" onclick="openLoadingdialog();" styleClass="sorttablelinks" rerender="PlanningGrid,totalCallsRowPanel,error" oncomplete="destroyLoadingDialog();return confirmAddDel({!EventAddedDeleted});">
+                                        <apex:param name="currentSortField" value="Grading" assignTo="{!currentSortField}"/>
+                                    </apex:commandLink>
+                                 </th>  
+                             </apex:outputText>
+                             <apex:outputText rendered="{!if(selectedWeek == 'All',true, false)}">
+                                 <apex:repeat value="{!weeksHeader}" var="weekNumber">
+                                    <th id="{!weekNumber}" class="PTheaderColumn tdRedHeaders">
+                                        <div style="float:right;vertical-align:top;margin-top:0;padding-right:3px;">                                          
+                                            <apex:outputPanel rendered="{!if(userLocation=='australia', displayAddButton[weekNumber], false)}">
+                                                <img src="{!$Resource.DeleteTaskIcon}" onclick="confirmDelete('{!weekNumber}');"  class="iconButton PlanningTablebtn" style="background-color:rgb(198,12,48) !important"/>
+                                            </apex:outputPanel>
+                                        </div>
+                                        <div style="text-align:left;margin-top:0;width:120px;padding:2px;" class="wordwrap">
+                                            <apex:outputText value="{!weekNumber}" rendered="{!if(userLocation=='australia', true, false)}"/>
+                                        </div>
+                                    </th>
+                                    <apex:variable var="columnCount" value="{!columnCount + 1}"/>
+                                 </apex:repeat>
+                             </apex:outputText>
+                             <apex:outputText rendered="{!if(selectedWeek == 'All',false, true)}">
+                                <apex:repeat value="{!daysHeader}" var="dayName">
+                                    <th id="{!dayName}" class="PTheaderColumn tdRedHeaders">
+                                        <div style="float:right;vertical-align:top;margin-top:0;padding-right:3px;">                                          
+                                            <apex:outputPanel rendered="{!if(userLocation=='australia', displayAddButton[selectedWeek], false)}">
+                                                <img src="{!$Resource.DeleteTaskIcon}" onclick="confirmDelete('{!dayName}');"  class="iconButton PlanningTablebtn" style="background-color:rgb(198,12,48) !important"/>
+                                            </apex:outputPanel>
+                                        </div>
+                                        <div style="text-align:left;margin-top:0;width:120px;padding:2px;" class="wordwrap">
+                                            <apex:outputText value="{!dayLabels[dayName]}" />
+                                        </div>
+                                        <apex:variable var="columnCount" value="{!columnCount + 1}"/>
+                                    </th>
+                                 </apex:repeat>
+                             </apex:outputText>
+                        </tr>
+                    </thead> 
+                    
+                    <tbody >
+                        <apex:repeat value="{!accounts}" var="acc">
+                            <tr>
+                                <td  class="tdData"> 
+                                    <div style="float:right;vertical-align:top;margin-top:0;width:100%;">
+                                        <apex:commandButton style="padding:0px !important;height:16px;width:16px;border:0px !important;float:right;" image="{!$Resource.Address}" onclick="openLoadingdialog();" rerender="error,addressPanel" action="{!addressInfo}"  oncomplete="destroyLoadingDialog(),addressInformation();" >
+                                            <apex:param name="accAddressId" value="{!acc.Id}" assignTo="{!accAddressId}" />
+                                        </apex:commandButton>
+                                    </div>
+                                    <apex:outputlink styleClass="outletNameLink" target="_blank" value="/{!acc.Id}">
+                                        <apex:outputText value="{!acc.Name}" />
+                                    </apex:outputlink>  
+                                </td>
+                                
+                                <apex:outputText rendered="{!if(userLocation=='australia', true, false)}">
+                                    <apex:outputText rendered="{!bannerGrpFlag}">
+                                        <td style="vertical-align:middle" class="tdData">
+                                            {!acc.Banner_Group_Name__c}
+                                        </td>
+                                    </apex:outputText> 
+                                    <apex:outputText rendered="{!cityFlag}" > 
+                                        <td style="vertical-align:middle" id="suburb" class="tdData"> 
+                                           {!acc.BillingCity}
+                                        </td> 
+                                    </apex:outputText>     
+                                    <apex:outputText rendered="{!postCodeFlag}">
+                                        <td style="vertical-align:middle" id="suburb" class="tdData"> 
+                                           {!acc.BillingPostalCode}
+                                        </td> 
+                                    </apex:OutputText>
+                                    <apex:outputText rendered="{!volumeFlag}" >
+                                        <td id="Volume" style="vertical-align:middle" class="tdData">
+                                           {!acc.Volume__c}
+                                        </td>
+                                    </apex:outputText> 
+                                </apex:outputText>          
+                                
+                                <apex:outputText rendered="{!gradingFlag}" >
+                                    <td id="Volume" style="vertical-align:middle" class="tdData">
+                                        {!acc.Account_Grading__c}
+                                    </td>
+                                </apex:outputText> 
+                                
+                                <!-- Plot the Event data -->
+                                
+                                <!-- Plot the Event data for All Weeks-->
+                                <apex:outputText rendered="{!if(selectedWeek == 'All',true, false)}"> 
+                                    <apex:repeat value="{!weeksHeader}" var="weekName">
+                                       <td>
+                                           <apex:outputPanel rendered="{!displayAddButton[weekName]}" style="float:right;vertical-align:top;margin-top:0;">
+                                               <apex:commandButton Styleclass="B_Edit" image="{!$Resource.EditTaskIcon}" onclick="addEvent('{!acc.Id}-{!weekName}', this.id)" rerender="false"/>
+                                           </apex:outputPanel>  
+                                         
+                                           <ul id="{!acc.Id}{!weekName}">
+                                               <apex:repeat value="{!EventsMap[acc.Id][weekName]}" var="dayOfEvent">
+                                                   <apex:variable value="black" var="linkClass"/> 
+                                                   <apex:repeat value="{!EventsMap[acc.Id][weekName][dayOfEvent]}" var="Event">
+                                                       <apex:variable value="{!IF(AND(Event.ActivityDate < todaysDate, Event.Status__c != 'Completed'),'red',IF(Event.Status__c == 'Deferred','Green',if(Event.Status__c=='Completed','blue','black')))}" var="linkClass"/> 
+                                                       <li>
+                                                           <apex:outputlink target="_blank" value="/{!Event.Id}" style="color:{!linkClass};font-weight:bold;" rendered="{!if(Event.Id =='', false, true)}">
+                                                               <apex:outputText value="{!dayLabels[dayOfEvent]}"/>
+                                                           </apex:outputlink>
+                                                           <a target="#" value="#" style="color:{!linkClass};font-weight:bold;" rendered="{!if(Event.Id =='', true, false)}">
+                                                                <apex:outputText value="{!dayLabels[dayOfEvent]}" rendered="{!if(Event.Id =='', true, false)}" style="color:{!linkClass};font-weight:bold;"/>
+                                                           </a>
+                                                       </li>
+                                                   </apex:repeat>  
+                                               </apex:repeat>
+                                           </ul>  
+                                       </td> 
+                                    </apex:repeat>  
+                                </apex:outputText>
+                                <!-- Plot the Event data for a selected week -->
+                                <apex:outputText rendered="{!if(selectedWeek == 'All',false, true)}">
+                                    <apex:repeat value="{!daysHeader}" var="dayName">
+                                       
+                                       <td>  
+                                            <apex:variable value="{!0}" var="EventFound"/>
+                                            <apex:repeat value="{!EventsMap[acc.Id][selectedWeek][dayName]}" var="Event">
+                                                <apex:variable value="{!1}" var="EventFound"/>
+                                                <apex:outputPanel rendered="{!displayAddButton[selectedWeek]}" style="float:right;vertical-align:top;margin-top:0;">
+                                                   <apex:commandButton Styleclass="B_Edit" image="{!$Resource.EditTaskIcon}"  rendered="{!if(EventsMap[acc.Id][selectedWeek][dayName][0].subject !='',true,false)}" rerender="PlanningGrid,error" action="{!deleteEventForDay}" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();"  >
+                                                       <apex:param name="accId" value="{!acc.Id}" assignTo="{!accId}" />
+                                                       <apex:param name="weekName" value="{!selectedWeek}" assignTo="{!weekName}" />
+                                                       <apex:param name="weekDayname" value="{!dayName}" assignTo="{!weekDayname}" />
+                                                   </apex:commandButton>
+                                               </apex:outputPanel>
+                                           </apex:repeat>
+                                           
+                                           <apex:outputPanel rendered="{!displayAddButton[selectedWeek]}" style="float:right;vertical-align:top;margin-top:0;">
+                                            <apex:commandButton Styleclass="B_Edit" image="{!$Resource.EditTaskIcon}" rendered="{!if(EventFound == 0, true, false)}" rerender="PlanningGrid,error" action="{!createEventForDay}" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();"  >
+                                                <apex:param name="accId" value="{!acc.Id}" assignTo="{!accId}" />
+                                                <apex:param name="weekName" value="{!selectedWeek}" assignTo="{!weekName}" />
+                                                <apex:param name="weekDayname" value="{!dayName}" assignTo="{!weekDayname}" />
+                                           </apex:commandButton>
+                                           </apex:outputPanel>  
+                                                                               
+                                           <ul id="{!acc.Id}{!selectedWeek}">
+                                               <apex:variable value="black" var="linkClass"/> 
+                                               <apex:repeat value="{!EventsMap[acc.Id][selectedWeek][dayName]}" var="Event">
+                                                   <apex:variable value="{!IF(AND(Event.ActivityDate < todaysDate, Event.Status__c != 'Completed'),'red',IF(Event.Status__c == 'Deferred','Green',if(Event.Status__c=='Completed','blue','black')))}" var="linkClass"/>
+                                                   <apex:outputlink styleClass="" target="_blank" value="/{!EventsMap[acc.Id][selectedWeek][dayName][0].Id}" style="color:{!linkClass};font-weight:bold;" rendered="{!if(ISBLANK(EventsMap[acc.Id][selectedWeek][dayName][0].Id), false, true)}">
+                                                       <apex:outputText value="{!dayLabels[dayName]}"/>
+                                                   </apex:outputlink> 
+                                                   <apex:outputText value="{!dayLabels[dayName]}" rendered="{!if(EventsMap[acc.Id][selectedWeek][dayName][0].Id =='', true, false)}" style="color:{!linkClass};font-weight:bold;"/>
+                                               </apex:repeat>
+                                           </ul>  
+                                       </td> 
+                                    </apex:repeat> 
+                                </apex:outputText>
+                            </tr>
+                        </apex:repeat> 
+                        <tr >
+                            <td style="height: 30px;" colspan="{!FLOOR(columnCount)}">&nbsp;
+                            
+                            </td>
+                        </tr>
+                        
+                        <!-- Total Number of calls -->
+                        
+                        <apex:repeat value="{!daysHeader}" var="dayName" rendered="{!if(AND(selectedWeek == 'All',userLocation=='australia'),true, false)}">
+                           <tr>
+                               <apex:outputText rendered="{!bannerGrpFlag}" ><td style="height: 30px;"></td></apex:outputText>
+                               <apex:outputText rendered="{!cityFlag}" ><td style="height: 30px;"></td></apex:outputText>
+                               <apex:outputText rendered="{!volumeFlag}" ><td style="height: 30px;"></td></apex:outputText>
+                               <apex:outputText rendered="{!postCodeFlag}"><td style="height: 30px;"></td></apex:outputText>
+                               <apex:outputText rendered="{!gradingFlag}" ><td style="height: 30px;"></td></apex:outputText>
+                               <td style="height: 30px;">Total Number of Calls - {!Right(dayName,3)}</td>
+                               <apex:repeat value="{!weeksHeader}" var="weekName">
+                                    <td style="height: 30px;">{!dayWiseStatsAus[dayName][weekName]}</td>
+                               </apex:repeat>                                   
+                           </tr>
+                        </apex:repeat>
+                        
+                        <tr>
+                            <apex:outputText rendered="{!if(userLocation=='australia',true, false)}">
+                                <apex:outputText rendered="{!bannerGrpFlag}" ><td style="height: 30px;"></td></apex:outputText>
+                                <apex:outputText rendered="{!cityFlag}" ><td style="height: 30px;"></td></apex:outputText>
+                                <apex:outputText rendered="{!volumeFlag}" ><td style="height: 30px;"></td></apex:outputText>
+                                <apex:outputText rendered="{!postCodeFlag}"><td style="height: 30px;"></td></apex:outputText>
+                            </apex:outputText>  
+                            <apex:outputText rendered="{!gradingFlag}" ><td style="height: 30px;"></td></apex:outputText>
+                            <td style="height: 30px;">{!$Label.totalnumberofcalls}</td>
+                            <apex:repeat value="{!weeksHeader}" var="weekName" rendered="{!if(selectedWeek == 'All', true, false)}">
+                                <td style="height: 30px;">{!numberOfCallsMap[weekName]}</td>
+                            </apex:repeat>
+                            <apex:repeat value="{!daysHeader}" var="dayName" rendered="{!if(selectedWeek == 'All', false, true)}">
+                                <td style="height: 30px;">{!numberOfCallsMap[dayName]}</td>
+                            </apex:repeat>
+                        </tr>   
+           
+                    </tbody>
+                </table>
+                <script type="text/javascript">
+                     var $j = jQuery.noConflict(); 
+                     $j(function(){
+                        $j("#PlanningTable").stickyTableHeaders();
+                     });
+                </script>
+            </apex:outputPanel>
+            <br/>
+            
+            <apex:outputPanel id="totalCallsRowPanel">
+                <table cellspacing="0" cellpadding="0" id="totalCallsRow">                       
+                    <apex:outputText rendered="{!totalPages > 1}">
+                     <tr>
+                        <td colspan="{!FLOOR(columnCount)}">
+                            <apex:outputPanel id="pagination">
+                                <div style="float:left;width:10%;white-space: nowrap;"> <b>Page:</b><br/>{!setCon.PageNumber} of {!totalPages}</div>
+                                <div style="float:left;text-align:center;width:80%">
+                                    <apex:commandButton value="  |<  " action="{!first}" disabled="{!Not(setCon.HasPrevious)}" rerender="PlanningGrid,pagination,totalCallsRowPanel" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();"  /> &nbsp;
+                                    
+                                     <apex:commandButton value="  <  " action="{!previous}" disabled="{!Not(setCon.HasPrevious)}" rerender="PlanningGrid,pagination,totalCallsRowPanel" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();"  />  &nbsp;
+                                    
+                                    <apex:commandButton value="  >  " action="{!next}" disabled="{!Not(setCon.HasNext)}" rerender="PlanningGrid,pagination,totalCallsRowPanel" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();"  />  &nbsp;
+                                    
+                                    <apex:commandButton value="  >|  " action="{!last}" disabled="{!Not(setCon.HasNext)}" rerender="PlanningGrid,pagination,totalCallsRowPanel" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();"  />
+                                </div>
+                                <div style="float:right;width:10%px;white-space: nowrap;"><b>Page:</b><br/>{!setCon.PageNumber} of {!totalPages}</div>
+                            </apex:outputPanel>
+                        </td>
+                    </tr>
+                    </apex:outputText>    
+                </table>
+            </apex:outputPanel> 
+            <br/>
+            
+            <table style='margin: 0px auto;' >
+                <thead align = "center">
+                    <tr>
+                        <td>
+                            <!--<apex:commandButton value="    {!$Label.save}    " action="{!saveEvents}" rerender="PlanningGrid,totalCallsRowPanel,error" oncomplete="destroyLoadingDialog();" onclick="openLoadingdialog();"  />&nbsp;&nbsp; -->
+                            <apex:commandButton value="   {!$Label.cancel}   " action="{!cancel}" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();" rerender="PlanningGrid,error,totalCallsRowPanel" />&nbsp;&nbsp;
+                            
+                            <script type="text/javascript">
+                                function confirmRes(showDialog){
+                                  if(showDialog){
+                                      var result = confirm('Are you sure you want to overwrite your existing default Call Plan?');
+                                      
+                                      setOverrideDefault(result); 
+                                  
+                                  }  
+                                  return true;
+                                    
+                                }
+                            </script>
+                            
+                      </td>
+                    </tr>
+                </thead>
+            </table>
+            <apex:outputPanel rendered="{!if(userLocation=='australia',true, false)}">
+                <div class="slide-out-divcp">
+                    <a class="handle" href="http://link-for-non-js-users.html">Content</a>
+                     <B>Status:</B><br/>
+                     <img src="{!$Resource.Red}" height="30px"/>&nbsp;Incomplete Event<br/>
+                     <img src="{!$Resource.Black}" height="30px"/>&nbsp;Not Started, In Progress, Waiting on someone else<br/>
+                     <img src="{!$Resource.Green}" height="30px"/>&nbsp;Deferred<br/>
+                     <img src="{!$Resource.Blue}" height="30px"/>&nbsp;Completed
+                </div>
+            </apex:outputPanel>
+            <br/>
+            
+            
+            <div id="createEventDialog" title="{!$Label.createnewtask}">                
+                <span>
+                    {!$Label.mon}: <apex:inputCheckbox value="{!daysCheckBoxList[0]}"  id="mon"/>
+                </span>                            
+                <span>
+                    {!$Label.tue}: <apex:inputCheckbox value="{!daysCheckBoxList[0]}"  id="tue"/>
+                </span>                            
+                <span>
+                    {!$Label.wed}: <apex:inputCheckbox value="{!daysCheckBoxList[0]}"  id="wed"/>
+                </span>                            
+                <span>
+                    {!$Label.thu}: <apex:inputCheckbox value="{!daysCheckBoxList[0]}"  id="thu"/>
+                </span>                            
+                <span>
+                    {!$Label.fri}: <apex:inputCheckbox value="{!daysCheckBoxList[0]}"  id="fri"/>
+                </span>                           
+                <table id="createEventInput">
+                     <tr>
+                        <td>{!$Label.comments}: </td>
+                         <td><textarea rows="4" cols="25" name="EventDescription" id="EventDescription"></textarea></td>
+                    </tr>
+                </table>
+            </div> 
+            <apex:outputPanel id="addressPanel" style="display: none">
+                <div id="addressDialog" title="{!$Label.addressinformation}" style="color: white;"> 
+                    <apex:outputText rendered="{!if(userLocation=='australia',true, false)}">           
+                        <table>
+                        <tr>
+                                <td>
+                                    <b>{!$Label.name}: </b>
+                                </td>
+                                <td>
+                                     <b><apex:OutputText value="{!AccAddress.Name}"  id="AccountNameA"/></b>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    {!$Label.billingstreet}: 
+                                </td>
+                                <td>
+                                     <apex:OutputText value="{!AccAddress.BillingStreet}"  id="billingStreetA"/>
+                                </td>
+                            </tr>                           
+                            <tr>
+                                <td>
+                                    {!$Label.billingcity}: 
+                                </td>
+                                <td>
+                                    <apex:OutputText value="{!AccAddress.BillingCity}"  id="billingCityA"/>
+                                </td>
+                            </tr>
+                                                    
+                            <tr>
+                                <td>
+                                    {!$Label.billingstate_province}:
+                                </td>
+                                <td>
+                                    <apex:OutputText value="{!AccAddress.BillingState}"  id="BillingStateA"/>
+                                </td>
+                            </tr>
+                                                   
+                            <tr>
+                                <td>
+                                    {!$Label.billingzip_postalcode}: 
+                                </td>
+                                <td>
+                                    <apex:OutputText value="{!AccAddress.BillingPostalCode}"  id="BillingPostCodeA"/>
+                                </td>
+                            </tr>                           
+                            <tr>
+                                <td>
+                                    {!$Label.billingcountry}: 
+                                </td>
+                                <td>
+                                     <apex:OutputText value="{!AccAddress.BillingCountry}"  id="BillingCountryA"/>
+                                </td>
+                            </tr>
+                        </table> 
+                    </apex:outputText>
+                    
+                </div>
+            </apex:outputPanel>
+        </apex:form>
+</apex:pageBlock>   
+<apex:outputPanel rendered="{!NOT(countryFound)}" style="width:400px;margin:0px auto;">
+    <apex:pageMessages id="globalError" />
+</apex:outputPanel> 
+<div id="loading-message" title="Loading....">
+    <img src="{!$Resource.AjaxAnimation}"/>
+</div>    
+<!--Javascript-->
+<script type="text/javascript">
+    var $j = jQuery.noConflict(); 
+    var left;
+    var top1;
+    /*bind click events and initialize dialogs on Document ready*/
+    $j(function(){ 
+        
+        /*Hide Dialog initially*/
+        $j("#createEventDialog").hide();
+        $j("#displayEventInfo").hide();
+        $j("#loading-message").hide();
+        $j("#addressDialog").hide()
+        
+    }); /*End Document Ready*/ 
+       
+    function clearEventDetails(){
+        
+       document.getElementById('{!$Component.mainblock.mainform.mon}').checked = false;
+       document.getElementById('{!$Component.mainblock.mainform.tue}').checked = false;
+       document.getElementById('{!$Component.mainblock.mainform.wed}').checked = false;
+       document.getElementById('{!$Component.mainblock.mainform.thu}').checked = false;
+       document.getElementById('{!$Component.mainblock.mainform.fri}').checked = false;
+       if(document.getElementById('{!$Component.mainblock.mainform.sat}'))
+         document.getElementById('{!$Component.mainblock.mainform.sat}').checked = false;
+       if(document.getElementById('{!$Component.mainblock.mainform.sun}'))  
+         document.getElementById('{!$Component.mainblock.mainform.sun}').checked = false;
+       document.getElementById('EventDescription').value = '';
+    
+    }
+</script>     
+</apex:page>

@@ -1,0 +1,40 @@
+.title-container {
+    max-width: 40px; 
+}
+
+.slds-text-title_caps th {
+    text-align: center;
+    height: 40px; /* change to desired value */
+    line-height: 40px;
+}
+.header-row {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background-color: white;
+}
+
+.center-aligned {
+    text-align: center;
+}
+.bold-text{
+    font-weight: bold; 
+    background-color: #f3f3f3; 
+}
+.data-table {
+    overflow: auto;
+    flex: 1;
+}
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+.bottom{
+    margin-bottom: 15px
+}
+.button-container{
+  display: flex;
+  justify-content: center;
+  align-items: center; 
+}

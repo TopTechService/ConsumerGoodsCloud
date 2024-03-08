@@ -1,0 +1,583 @@
+<apex:page controller="KAReport" showheader="false" readOnly="true" sidebar="false">
+    <apex:includeScript value="{!URLFOR($Resource.jquery, '/jquery/js/jquery.min.2.0.0.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jquery, '/jquery/js/jquery-ui-1.10.2.custom.min.js')}"/>
+    <apex:includeScript value="{!$Resource.KAReport}"/>
+    <style>                
+        #loading-message {
+            z-index:5000;
+            background-color:grey;
+        }
+    </style>
+
+                            
+    <script>
+    
+    
+        function calculateProductColumns(){                            
+		    <apex:repeat var="rangeId" value="{!brandSubClassificationProductMap}">
+		        <apex:repeat var="classification" value="{!brandSubClassificationProductMap[rangeId]}">
+		            calculateProductSubClassificationSum("tr.{!rangeId}-{!brandSubClassificationProductMapKeys[rangeId][classification]}","tr.{!rangeId}-{!brandSubClassificationProductMapKeys[rangeId][classification]}Sum");
+		        </apex:repeat>
+		        calculateRangeSum("tr.{!rangeId}","tr.{!rangeId}Sum");
+		    </apex:repeat>
+		    formatCells(".changeColor",".percentSymbol");
+		}
+		
+		
+    </script>
+    
+    <div style="text-align:center;font-size:25px">
+        <h1 style="text-align:center">Key Account Performance Report</h1>
+    </div>
+    <div style="height: 29px;" id="div1"></div>
+    <div style="padding-left:3%" >
+        <apex:form id="form">
+            <div >
+                <table style="background-color: rgb(173,182,212);" id="filterTable">
+                    <tr>
+                        <td>
+                            State:
+                        </td>
+                        <td>
+                            <apex:selectList value="{!selected_State}" size="1" id="selectedState">
+                                <apex:selectOptions value="{!StateList}"></apex:selectOptions>
+                            </apex:selectList>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Banner Group:
+                        </td>
+                        <td>
+                            <apex:selectList value="{!selected_BannerGroup}" size="1" id="selectedbannerGroup">
+                                <apex:selectOptions value="{!BannerGroup}"></apex:selectOptions>
+                            </apex:selectList>
+                        </td>
+                    </tr>
+                    
+                    
+                    <tr>
+                        <td>
+                            Start Date:
+                        </td>
+                        <td>
+                            <apex:inputfield value="{!salesDate.Start_Date__c}" id="startDate"> </apex:inputfield>
+                        </td>
+                    </tr>
+                                        
+                    <tr>
+                        <td>
+                           End Date:
+                        </td>
+                        <td>
+                            <apex:inputfield value="{!salesDate.Sale_Date__c}" id="selectedDate"> </apex:inputfield>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            &nbsp;
+                        </td>
+                        <td align="right">
+                            
+                            <apex:commandButton action="{!createReport}"  value="Run Report" style="width:80px;"/>&nbsp;
+                            <input type="button" class="btn" onclick="tableToExcel1('{!$Component.form.selectedState}','{!$Component.form.selectedbannerGroup}', '{!$Component.form.selectedDate}', '{!$Component.form.startDate}');" value="Export to Excel"/>
+                            <input type="button" class = "btn" name="Home go" value="Home" onclick="window.location.href='/'" style = "width:80px;"/>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <apex:outputPanel id="status">
+                                
+                                <div id="loading" style="display:{!IF(showResults,'block','none')};">
+                                    <!-- style="color:red;:font-size:20px;" -->
+                                    <div id="imageDiv" style="color:red;margin-top:200px;font-size:20px;margin-left:30%"><img src="{!$Resource.AjaxAnimation}"/></div>
+                                    <script>
+                                      var $j = jQuery.noConflict();
+                                      $j("#imageDiv").css('margin-top',+(window.innerHeight/2).toFixed(0)+'px');
+                                      $j("#imageDiv").css('margin-left',(window.innerWidth/2).toFixed(0)+'px');
+                                      $j("#loading").css('width',window.outerWidth+'px');
+                                      $j("#loading").css('height',window.outerHeight+'px');
+                                      $j("#loading").css('z-index','5000');
+                                      $j("#loading").css('top','0');
+                                      $j("#loading").css('left','0');
+                                      $j("#loading").css('background-color','white');
+                                      $j("#loading").css('opacity','0.7');
+                                      $j("#loading").css('position','absolute');
+                                    </script>
+                                </div>
+                            </apex:outputPanel>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <br/>
+            <br/>
+            <apex:pageMessages id="errorMsg">
+            </apex:pageMessages>
+            
+            <apex:outputPanel id="sample"/>
+              
+            <!-- Report Panel  -->
+            <div id="containerTable">
+            <apex:outputpanel rendered="{!showResults}" id="results">
+                <table class="allBorder" width="3300px" id="reportTable" style="border-collapse: collapse;">
+                     <col width="351px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="15px"/>
+                     
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="15px"/>
+                     
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="15px"/>
+                     
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+                     <col width="58px"/>
+
+                     <!-- Report Headers  -->
+                     <thead>
+                         <tr class="headingRow">
+                            <th style="background-color: none;width:350px;" align="center"></th>
+                            <th colspan="4" style="text-align:center;background-color: Yellow;width:235px;border-left:1px solid black;border-top:1px solid black;border-right:1px solid black;"  align="center">End Date Month</th>
+                            <th style="border: none;background-color:white; "></th>
+                            <th colspan="4" style="text-align:center;background-color: Yellow;width:235px;border-left:1px solid black;border-top:1px solid black;border-right:1px solid black;"  align="center">Start Date to End Date</th>
+                            <th style="border: none;background-color:white; "></th>
+                            <th colspan="28" style="text-align:center;background-color: #FFCC99;width:1651px;border-left:1px solid black;border-top:1px solid black;border-right:1px solid black;"  align="center">Volume by Quarter and Half TY vs. LY</th>
+                            <th style="border: none;background-color:white; "></th>
+                            <th colspan="12" style="text-align:center;background-color: #FFCC99;width:708px;border-left:1px solid black;border-top:1px solid black;border-right:1px solid black;"  align="center">Volume by Month (MAT)</th>
+                        </tr>
+                        <tr>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" >Product Description</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" >Actual TY</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" >Actual LY</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" > +/- vs. LY Cases</td>
+                            <td align="center" style="border-left:1px solid black;border-right:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" > +/- vs. LY Cases%</td>
+                            <td style="border: none;background-color:white; "></td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" >Actual TY</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" >Actual LY</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" > +/- vs. LY Cases</td>
+                            <td align="center" style="border-left:1px solid black;border-right:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" > +/- vs. LY Cases%</td>
+                            <td style="border: none;background-color:white; "></td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" >Q1 TY</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">Q1 LY</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">+/- vs. LY Cases</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">+/- vs. LY Cases %</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">Q2 TY</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">Q2 LY</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">+/- vs. LY Cases</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" >+/- vs. LY Cases %</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">H1 TY</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">H1 LY</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">+/- vs. LY Cases</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">+/- vs. LY Cases %</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">Q3 TY</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">Q3 LY</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">+/- vs. LY Cases</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">+/- vs. LY Cases %</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">Q4 TY</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">Q4 LY</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">+/- vs. LY Cases</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">+/- vs. LY Cases %</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">H2 TY</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">H2 LY</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">+/- vs. LY Cases</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">+/- vs. LY Cases %</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">Full Year TY</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">Full Year LY</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">+/- vs. LY Cases</td>
+                            <td align="center" style="border-left:1px solid black;border-right:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">+/- vs. LY Cases %</td>
+                            <td style="border: none;background-color:white; "></td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">JAN</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">FEB</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">MAR</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">APR</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">MAY</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">JUN</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">JUL</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">AUG</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">SEP</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">OCT</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">NOV</td>
+                            <td align="center" style="border-left:1px solid black;border-right:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">DEC</td>
+                        </tr>
+                    </thead>
+                    <!-- Report Data  -->
+                    <tbody>
+                        <tr>
+                            <td>&nbsp;</td>
+                        </tr>
+                        <!-- Data block for banner group-->
+                        <apex:repeat var="classification" value="{!classificationsList}">
+                            <tr class="classification" style="background-color:#C5D9F1">
+                                <td style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">{!classification}</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-1" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-2" name="formatWithComma">0.0</td>
+                                <td align="center" class="redGreenCell" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-3" name="formatWithComma">0.0</td>
+                                <td align="center" class="redGreenCell percentSymbol1" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" id="{!classification}-4" name="formatWithComma">0.0</td>
+                                <td style="border: none;background-color:white; "></td>                                   
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-6" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-7" name="formatWithComma">0.0</td>
+                                <td align="center" class="redGreenCell" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-8" name="formatWithComma">0.0</td> 
+                                <td align="center" class="redGreenCell percentSymbol1" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" id="{!classification}-9" name="formatWithComma">0.0</td>
+                                <td style="border: none;background-color:white; "></td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-11" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-12" name="formatWithComma">0.0</td>
+                                <td align="center" class="redGreenCell" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-13" name="formatWithComma">0.0</td>
+                                <td align="center" class="redGreenCell percentSymbol1" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-14" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-15" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-16" name="formatWithComma">0.0</td>
+                                <td align="center" class="redGreenCell" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-17" name="formatWithComma">0.0</td>
+                                <td align="center" class="redGreenCell percentSymbol1" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-18" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-19" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-20" name="formatWithComma">0.0</td>
+                                <td align="center" class="redGreenCell" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-21" name="formatWithComma">0.0</td>
+                                <td align="center" class="redGreenCell percentSymbol1" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-22" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-23" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-24" name="formatWithComma">0.0</td>
+                                <td align="center" class="redGreenCell" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-25" name="formatWithComma">0.0</td>
+                                <td align="center" class="redGreenCell percentSymbol1" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-26" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-27" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-28" name="formatWithComma">0.0</td>
+                                <td align="center" class="redGreenCell" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-29" name="formatWithComma">0.0</td>
+                                <td align="center" class="redGreenCell percentSymbol1" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-30" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-31" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-32" name="formatWithComma">0.0</td>
+                                <td align="center" class="redGreenCell" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-33" name="formatWithComma">0.0</td>
+                                <td align="center" class="redGreenCell percentSymbol1" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-34" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}.Id}-35" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-36" name="formatWithComma">0.0</td>
+                                <td align="center" class="redGreenCell" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-37" name="formatWithComma">0.0</td>
+                                <td align="center" class="redGreenCell percentSymbol1" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" id="{!classification}-38" name="formatWithComma">0.0</td>   
+                                <td style="border: none;background-color:white; "></td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-40" name="formatWithComma">0.0</td>  
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-41" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-42" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-43" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-44" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-45" name="formatWithComma">0.0</td> 
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-46" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-47" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-48" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-49" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-50" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-right:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" id="{!classification}-51" name="formatWithComma">0.0</td>                 
+                            </tr>
+                        </apex:repeat>
+                        <tr class="bannerTotal" style="background-color:#8DB4E2">
+                            <td style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">TOTAL BANNER</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" class="redGreenCell" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" class="redGreenCell percentSymbol1" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                            <td style="border: none;background-color:white; "></td>                                   
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" class="redGreenCell" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td> 
+                            <td align="center" class="redGreenCell percentSymbol1" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                            <td style="border: none;background-color:white; "></td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" class="redGreenCell" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" class="redGreenCell percentSymbol1" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" class="redGreenCell" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" class="redGreenCell percentSymbol1" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" class="redGreenCell" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" class="redGreenCell percentSymbol1" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" class="redGreenCell" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" class="redGreenCell percentSymbol1" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" class="redGreenCell" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" class="redGreenCell percentSymbol1" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" class="redGreenCell" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" class="redGreenCell percentSymbol1" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" class="redGreenCell" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" class="redGreenCell percentSymbol1" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                            <td style="border: none;background-color:white; "></td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                            <td align="center" style="border-left:1px solid black;border-right:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>                   
+                        </tr>
+                        <tr>
+                            <td>&nbsp;</td>
+                        </tr>
+                        <apex:repeat var="rangeId" value="{!brandSubClassificationProductMap}">
+                            <apex:variable value="{!0}" var="classificationCount"/>
+                            <apex:repeat var="classification" value="{!brandSubClassificationProductMap[rangeId]}">
+                                <apex:variable var="classificationCount" value="{!classificationCount + 1}"/>
+                                <apex:repeat var="product" value="{!brandSubClassificationProductMap[rangeId][classification]}">
+                                    <tr class="{!rangeId}-{!brandSubClassificationProductMapKeys[rangeId][classification]} {!rangeId}">
+                                        <td style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">{!productInfoMap[product].Name}</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-1" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-2" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-3" class="changeColor" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-4" class="changeColor percentSymbol" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td style="border: none;background-color:white; "></td>                                  
+                                        <td align="center" id="{!productInfoMap[product].Id}-6" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-7" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-8" class="changeColor" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td> 
+                                        <td align="center" id="{!productInfoMap[product].Id}-9" class="changeColor percentSymbol" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td style="border: none;background-color:white; "></td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-11" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-12" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-13" class="changeColor" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-14" class="changeColor percentSymbol" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-15" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-16" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-17" class="changeColor" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-18" class="changeColor percentSymbol" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-19" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-20" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-21" class="changeColor" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-22" class="changeColor percentSymbol" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-23" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-24" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-25" class="changeColor" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-26" class="changeColor percentSymbol" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-27" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-28" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-29" class="changeColor" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-30" class="changeColor percentSymbol" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-31" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-32" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-33" class="changeColor" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-34" class="changeColor percentSymbol" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-35" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-36" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-37" class="changeColor" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-38" class="changeColor percentSymbol" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td style="border: none;background-color:white; "></td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-40" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>  
+                                        <td align="center" id="{!productInfoMap[product].Id}-41" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-42" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-43" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-44" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-45" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-46" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-47" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-48" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-49" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-50" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                        <td align="center" id="{!productInfoMap[product].Id}-51" style="border-left:1px solid black;border-right:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    </tr>
+                                </apex:repeat>
+                                <tr class="{!rangeId}-{!brandSubClassificationProductMapKeys[rangeId][classification]}Sum" style="background-color:#D9D9D9">
+                                    <td style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">{!classification}</td>
+                                    <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" class="changeColor" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" class="changeColor percentSymbol" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td style="border: none;background-color:white; "></td>                                   
+                                    <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" class="changeColor" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td> 
+                                    <td align="center" class="changeColor percentSymbol" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td style="border: none;background-color:white; "></td>
+                                    <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" class="changeColor" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma" >0.0</td>
+                                    <td align="center" class="changeColor percentSymbol" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" class="changeColor" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;">0.0</td>
+                                    <td align="center" class="changeColor percentSymbol" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" class="changeColor" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" class="changeColor percentSymbol" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" class="changeColor" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" class="changeColor percentSymbol" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" class="changeColor" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" class="changeColor percentSymbol" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" class="changeColor" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" class="changeColor percentSymbol" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" class="changeColor" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" class="changeColor percentSymbol" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td style="border: none;background-color:white; "></td>
+                                    <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                    <td align="center" style="border-left:1px solid black;border-right:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>                   
+                                </tr> 
+                            </apex:repeat>
+                            
+                            <tr class="{!rangeId}Sum" style="background-color:#808080">
+                                <td style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" >TOTAL {!brandInfoMap[rangeId]}</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" class="changeColor" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" class="changeColor percentSymbol" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                                <td style="border: none;background-color:white; "></td>                                 
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" class="changeColor" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td> 
+                                <td align="center" class="changeColor percentSymbol" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                                <td style="border: none;background-color:white; "></td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" class="changeColor" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" class="changeColor percentSymbol" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" class="changeColor" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" class="changeColor percentSymbol" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" class="changeColor" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" class="changeColor percentSymbol" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" class="changeColor" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" class="changeColor percentSymbol" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" class="changeColor" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" class="changeColor percentSymbol" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" class="changeColor" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" class="changeColor percentSymbol" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" class="changeColor" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" class="changeColor percentSymbol" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;border-right:1px solid black;" name="formatWithComma">0.0</td>
+                                <td style="border: none;background-color:white; "></td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>
+                                <td align="center" style="border-left:1px solid black;border-right:1px solid black;border-top:1px solid black;border-bottom:1px solid black;" name="formatWithComma">0.0</td>             
+                            </tr>
+                           <tr>
+                            <td>&nbsp;</td>
+                           </tr>
+                        </apex:repeat>
+                    </tbody>
+                    <script type="text/javascript">
+                        var remoteActionsArray = new Array();
+		                remoteActionsArray[0] = '{!$RemoteAction.KAReport.getSubBannerGroups}';
+		                remoteActionsArray[1] = '{!$RemoteAction.KAReport.calculateColumn1}';
+		                remoteActionsArray[2] = '{!$RemoteAction.KAReport.calculateColumn2}';
+		                remoteActionsArray[3] = '{!$RemoteAction.KAReport.calculateColumn6}';
+		                remoteActionsArray[4] = '{!$RemoteAction.KAReport.calculateColumn7}';
+		                remoteActionsArray[5] = '{!$RemoteAction.KAReport.calculateColumn11}';
+		                remoteActionsArray[6] = '{!$RemoteAction.KAReport.calculateColumn12}';
+		                remoteActionsArray[7] = '{!$RemoteAction.KAReport.calculateColumn15}';
+		                remoteActionsArray[8] = '{!$RemoteAction.KAReport.calculateColumn16}';
+		                remoteActionsArray[9] = '{!$RemoteAction.KAReport.calculateColumn23}';
+		                remoteActionsArray[10] = '{!$RemoteAction.KAReport.calculateColumn24}';
+		                remoteActionsArray[11] = '{!$RemoteAction.KAReport.calculateColumn27}';
+		                remoteActionsArray[12] = '{!$RemoteAction.KAReport.calculateColumn28}';
+		                remoteActionsArray[13] = '{!$RemoteAction.KAReport.calculateColumn40}';
+		                remoteActionsArray[14] = '{!$RemoteAction.KAReport.calculateColumn41}';
+		                remoteActionsArray[15] = '{!$RemoteAction.KAReport.calculateColumn42}';
+		                remoteActionsArray[16] = '{!$RemoteAction.KAReport.calculateColumn43}';
+		                remoteActionsArray[17] = '{!$RemoteAction.KAReport.calculateColumn44}';
+		                remoteActionsArray[18] = '{!$RemoteAction.KAReport.calculateColumn45}';
+		                remoteActionsArray[19] = '{!$RemoteAction.KAReport.calculateColumn46}';
+		                remoteActionsArray[20] = '{!$RemoteAction.KAReport.calculateColumn47}';
+		                remoteActionsArray[21] = '{!$RemoteAction.KAReport.calculateColumn48}';
+		                remoteActionsArray[22] = '{!$RemoteAction.KAReport.calculateColumn49}';
+		                remoteActionsArray[23] = '{!$RemoteAction.KAReport.calculateColumn50}';
+		                remoteActionsArray[24] = '{!$RemoteAction.KAReport.calculateColumn51}';
+                        calculateReport('{!$Component.form.startDate}','{!$Component.form.selectedDate}','{!selected_State}', '{!selected_BannerGroup}','{!$Component.errorMsg}', remoteActionsArray);
+                    </script>    
+                </table>                
+            </apex:outputpanel>
+            </div>
+        </apex:form>
+        <script type="text/javascript">
+            /*bind click events and initialize dialogs on Document ready*/
+            $j(document).ready(function(){ 
+                /*Hide Dialog initially*/
+                $j("#loading-message").hide();               
+                
+            }); /*End Document Ready*/ 
+        </script>    
+    </div>
+</apex:page>

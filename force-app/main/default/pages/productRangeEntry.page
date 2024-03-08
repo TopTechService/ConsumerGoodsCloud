@@ -1,0 +1,58 @@
+<apex:page standardController="Account" extensions="productRangeExtension"  lightningStylesheets="true">
+    <apex:slds />
+    <head>
+        <style>       
+            body .bPageTitle .content, body .bPageTitle .links, .slds-vf-scope .bPageTitle .content{ width: 100%}
+            .tdCustom {border-bottom: 1px solid lightgrey;}
+        </style>
+    </head>
+    <div class="slds-panel">
+        <apex:sectionHeader Title="Manage {!$ObjectType.Product_Range__c.Label}" />
+        
+        
+        <apex:form >
+            <apex:PageMessages />
+            <apex:pageBlock id="selected">
+                
+                <!--<apex:outputLabel>{!$User.UITheme}</apex:outputLabel>
+<apex:outputLabel>{!$User.UIThemeDisplayed}</apex:outputLabel>-->
+                <apex:pageBlockSection title="{!Account.Name}" columns="1" rendered="{! $User.UITheme != 'Theme4t' }">
+                    <apex:pageblockTable value="{!productRangeList}" var="s">
+                        
+                        <apex:column headerValue="{!$ObjectType.Product2.Label}" value="{!s.Product__r.SKU_Name__c}"/>
+                        <apex:column headerValue="{!$ObjectType.Product_Range__c.Fields.In_Range__c.Label}">
+                            <apex:inputField value="{!s.In_Range__c}" required="true"  />
+                        </apex:column>
+                        <apex:column headerValue="{!$ObjectType.Product_Range__c.Fields.Shelf_Price__c .Label}" >
+                            <apex:inputField value="{!s.Shelf_Price__c}" required="false" />
+                        </apex:column>
+                        <apex:column headerValue="{!$ObjectType.Product_Range__c.Fields.Last_Purchase_Date__c.Label}" value="{!s.Last_Purchase_Date__c}"/>
+                        
+                    </apex:pageblockTable>
+                </apex:pageBlockSection>
+                <apex:pageBlockSection title="{!Account.Name}" columns="1" rendered="{! $User.UITheme == 'Theme4t' }">
+                    <apex:repeat value="{!productRangeList}" var="s">
+                        <table>
+                            
+                        <tr>
+                        <apex:outputText Label="{!$ObjectType.Product2.Label}" value="{!s.Product__r.SKU_Name__c}"/>
+                        <apex:inputCheckbox label="{!$ObjectType.Product_Range__c.Fields.In_Range__c.Label}" value="{!s.In_Range__c}"  required="true"  />
+                        <apex:inputField value="{!s.Shelf_Price__c}" required="false" />
+                        <apex:outputText Label="{!$ObjectType.Product_Range__c.Fields.Last_Purchase_Date__c.Label}" value="{0,date,dd/MM/yyyy}"> <apex:param value="{!s.Last_Purchase_Date__c}" /> </apex:outputText>
+                        </tr>
+                            <tr><td width = "100%" class = "tdCustom"></td></tr>
+                            </table>
+                    </apex:repeat>
+                </apex:pageBlockSection>
+                
+                <apex:pageBlockButtons >
+                    <apex:commandButton action="{!onSave}" value="Save"/>
+                    <apex:commandButton action="{!onCancel}" value="Cancel" immediate="true"/>
+                </apex:pageBlockButtons>
+                
+            </apex:pageBlock>
+            
+        </apex:form>
+        
+    </div>
+</apex:page>

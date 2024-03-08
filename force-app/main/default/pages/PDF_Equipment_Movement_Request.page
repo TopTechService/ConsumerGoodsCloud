@@ -1,0 +1,194 @@
+<apex:page renderAs="pdf" controller="PDF_Equipment_Movement_Request">
+<!-- <apex:page> -->
+    
+    <body style="margin: 0; padding: 0;">
+
+        <!-- LOGO -->
+        <table style="width: 100%; margin-bottom: 10px;">
+            <tr>
+                <td style="width: 208px; padding-left: 32px; vertical-align: bottom;"><apex:image url="{!URLFOR($Resource.PDF, 'PDF_Avem_Quirks.png')}" width="176px" alt="Avem Quirks Logo"/></td>
+                <td style="display: block; position: relative; height: 100%;">
+                    <div style="display: block; font-size: 30px; font-weight: 700; text-align: right; font-family: 'Times New Roman', Times, serif; margin-top: 50px;">Equipment Movement Request</div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- CUSTOMER DETAILS -->
+        <table border="0" cellspacing="0" cellpadding="3" bordercolor="#313131" style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; width: 100%; margin-bottom: 10px; line-height: 1;">
+            <tr>
+                <td colspan="4" style="border-left: 1px solid #313131; border-top: 1px solid #313131; border-bottom: 1px solid #313131; border-right: 1px solid #313131; font-size: 16px; text-transform: uppercase; font-weight: 700; background-color: #dddddd; padding-left: 10px;">customer details</td>
+            </tr>
+            <tr>
+                <td rowspan="2" style="font-weight: 700; text-transform: uppercase; border-left: 1px solid #313131; border-bottom: 1px solid #313131; border-right: 1px solid #313131;">customer name:</td>
+                <td style="font-weight: 700; border-bottom: 1px solid #313131; border-right: 1px solid #313131;">Campari</td>
+                <td style="font-weight: 700; border-bottom: 1px solid #313131; border-right: 1px solid #313131;">Customer Representative:</td>
+                <td style="border-bottom: 1px solid #313131; border-right: 1px solid #313131;"><apex:outputText value="{! userInformation.Name }"/></td>
+            </tr>
+            <tr>
+                <td style="border-bottom: 1px solid #313131; border-right: 1px solid #313131;"></td>
+                <td style="font-weight: 700; border-bottom: 1px solid #313131; border-right: 1px solid #313131;">Contact Number:</td>
+                <td style="border-bottom: 1px solid #313131; border-right: 1px solid #313131;"><apex:outputText value="{! userInformation.Phone }"/></td>
+            </tr>
+            <tr>
+                <td style="font-weight: 700; text-transform: uppercase; border-left: 1px solid #313131; border-bottom: 1px solid #313131; border-right: 1px solid #313131;">sold to #:</td>
+                <td style="border-bottom: 1px solid #313131; border-right: 1px solid #313131;"></td>
+                <td style="font-weight: 700; border-bottom: 1px solid #313131; border-right: 1px solid #313131;">Contact E-mail:</td>
+                <td style="border-bottom: 1px solid #313131; border-right: 1px solid #313131;"><apex:outputText value="{! userInformation.Email }"/></td>
+            </tr>
+        </table>
+
+        <!-- MOVEMENT TYPE -->
+        <table border="0" cellspacing="0" cellpadding="3" bordercolor="#313131" style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; width: 100%; margin-bottom: 10px; line-height: 1;">
+            <tr>
+                <td colspan="2" style="font-size: 17px; text-transform: uppercase; font-weight: 700; background-color: #dddddd; padding-left: 10px; border: 1px solid #313131;">movement type</td>
+            </tr>
+            <tr>
+                <td style="vertical-align: top; width: 50%; border-left: 1px solid #313131; border-bottom: 1px solid #313131; border-right: 1px solid #313131; font-weight: 700; text-transform: uppercase; vertical-align: top;">
+                    <span style="margin-right: 10px; line-height: 1; ">delivery</span>
+                    <apex:outputPanel rendered="{! !assetRegister.Removal_Requested__c }">
+                        <apex:image url="{!URLFOR($Resource.PDF, 'check.png')}" width="15px" height="15px" style="display: inline-block;"/>
+                    </apex:outputPanel>
+                    <apex:outputPanel rendered="{! assetRegister.Removal_Requested__c }">
+                        <apex:image url="{!URLFOR($Resource.PDF, 'uncheck.png')}" width="15px" height="15px" style="display: inline-block;"/>
+                    </apex:outputPanel>
+                </td>
+                <td style="vertical-align: top; width: 50%; border-bottom: 1px solid #313131; border-right: 1px solid #313131; font-weight: 700; text-transform: uppercase; vertical-align: top;">
+                    <span style="margin-right: 10px; line-height: 1;">pick up</span>
+                    <apex:outputPanel rendered="{! assetRegister.Removal_Requested__c }">
+                        <apex:image url="{!URLFOR($Resource.PDF, 'check.png')}" width="15px" height="15px" style="display: inline-block;"/>
+                    </apex:outputPanel>
+                    <apex:outputPanel rendered="{! !assetRegister.Removal_Requested__c }">
+                        <apex:image url="{!URLFOR($Resource.PDF, 'uncheck.png')}" width="15px" height="15px" style="display: inline-block;"/>
+                    </apex:outputPanel>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2" style="border-left: 1px solid #313131; border-bottom: 1px solid #313131; border-right: 1px solid #313131;">
+                    <span style="font-weight: 700;">Date Required: </span>
+                    <apex:outputText value="{0,date,dd/MM/yy}">
+                            <apex:param value="{! IF (assetRegister.Removal_Requested__c ,assetRegister.Removal_Requested_Date__c, assetRegister.Requested_Date__c)  }" />
+                    </apex:outputText>
+                </td>
+            </tr>
+        </table>
+
+        <!-- EQUIPMENT DETAILS -->
+        <table border="0" cellspacing="0" cellpadding="3" style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; width: 100%; margin-bottom: 10px;  line-height: 1;">
+            <tr>
+                <td colspan="3" style="font-size: 17px; text-transform: uppercase; font-weight: 700; background-color: #dddddd; padding-left: 10px; border: 1px solid #313131;">equipment details</td>
+            </tr>
+            <tr>
+                <td colspan="2" style="border-left: 1px solid #313131; border-bottom: 1px solid #313131; border-right: 1px solid #313131;"><span style="font-weight: 700; text-transform: uppercase;">serial #: </span><apex:outputText value="{! assetRegister.Serial_Number__c }"/></td>
+                <td style="border-right: 1px solid #313131; font-weight: 700;"><span>Branding:</span></td>
+            </tr>
+            <tr>
+                <td style="border-left: 1px solid #313131; border-bottom: 1px solid #313131; border-right: 1px solid #313131; font-weight: 700;">Model:</td>
+                <td style="border-bottom: 1px solid #313131; border-right: 1px solid #313131;"><apex:outputText value="{! assetRegister.Product_family_class__c }"/></td>
+                <td rowspan="2" style="border-bottom: 1px solid #313131; border-right: 1px solid #313131; vertical-align: top;"><apex:outputText value="{! assetRegister.A_Brand__c }"/></td>
+            </tr>
+            <tr>
+                <td style="border-left: 1px solid #313131; border-bottom: 1px solid #313131; border-right: 1px solid #313131; font-weight: 700;">Type:</td>
+                <td style="border-bottom: 1px solid #313131; border-right: 1px solid #313131;"><apex:outputText value="{! assetRegister.Product_Name__c }"/></td>
+            </tr>
+        </table>
+
+        <!-- OUTLET DETAILS -->
+        <table border="0" cellspacing="0" cellpadding="3" style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; width: 100%; margin-bottom: 10px; line-height: 1;">
+            <tr>
+                <td colspan="2" style="font-size: 17px; text-transform: uppercase; font-weight: 700; background-color: #dddddd; padding-left: 10px; border: 1px solid #313131;">outlet details</td>
+                <td style="font-size: 17px; text-transform: uppercase; font-weight: 700; background-color: #dddddd; padding-left: 10px; border-top: 1px solid #313131; border-bottom: 1px solid #313131; border-right: 1px solid #313131;">site contact</td>
+            </tr>
+            <tr>
+                <td style="border-left: 1px solid #313131; border-bottom: 1px solid #313131; border-right: 1px solid #313131; font-weight: 700; text-transform: uppercase;">SHIP TO #:</td>
+                <td style="border-bottom: 1px solid #313131; border-right: 1px solid #313131;"><apex:outputText value="{! IF(useShiping,assetRegister.Account__r.ShippingStreet,assetRegister.Account__r.BillingStreet)}"/></td>
+                <td style="border-right: 1px solid #313131; font-weight: 700;">Name:</td>
+            </tr>
+            <tr>
+                <td style="border-left: 1px solid #313131; border-bottom: 1px solid #313131; border-right: 1px solid #313131; font-weight: 700;">Outlet Name:</td>
+                <td style="border-bottom: 1px solid #313131; border-right: 1px solid #313131;"><apex:outputText value="{! assetRegister.Account__r.Name }"/></td>
+                <td style="border-bottom: 1px solid #313131; border-right: 1px solid #313131;"><apex:outputText value="{! assetRegister.Outlet_Contact__r.Name }"/></td>
+            </tr>
+            <tr>
+                <td rowspan="3" style="border-left: 1px solid #313131; border-bottom: 1px solid #313131; border-right: 1px solid #313131; vertical-align: top; font-weight: 700;">Full Address:</td>
+                <td rowspan="3" style="border-bottom: 1px solid #313131; border-right: 1px solid #313131; vertical-align: top;">
+                    <apex:outputText value="{! IF(useShiping,assetRegister.Account__r.ShippingStreet, assetRegister.Account__r.BillingStreet)}"/>,<br />
+                    <apex:outputText value="{! IF(useShiping,assetRegister.Account__r.ShippingCity, assetRegister.Account__r.BillingCity)}"/>,<br />
+                    <apex:outputText value="{! IF(useShiping,assetRegister.Account__r.ShippingState, assetRegister.Account__r.BillingState)}"/>,<br />
+                    <apex:outputText value="{! IF(useShiping,assetRegister.Account__r.ShippingPostalCode, assetRegister.Account__r.BillingPostalCode)}"/>,<br />
+                </td>
+                <td style="border-right: 1px solid #313131; font-weight: 700;">Contact Number:</td>
+            </tr>
+            <tr>
+                <td style="border-right: 1px solid #313131;"><span style="font-weight: 700;">Land: </span><apex:outputText value="{! assetRegister.Outlet_Contact__r.Phone }"/></td>
+            </tr>
+            <tr>
+                <td style="border-bottom: 1px solid #313131; border-right: 1px solid #313131;"><span style="font-weight: 700;">Mob: </span><apex:outputText value="{! assetRegister.Outlet_Contact__r.MobilePhone }"/></td>
+            </tr>
+            <tr>
+                <td style="border-left: 1px solid #313131; border-bottom: 1px solid #313131; border-right: 1px solid #313131; font-weight: 700;">Suburb &amp; P/C:</td>
+                <td style="border-bottom: 1px solid #313131; border-right: 1px solid #313131;"><apex:outputText value="{! assetRegister.Account__r.ShippingCity }"/></td>
+                <td rowspan="2" style="border-bottom: 1px solid #313131; border-right: 1px solid #313131; vertical-align: top; font-weight: 700;">Alternate Contact name &amp; number:</td>
+            </tr>
+            <tr>
+                <td style="border-left: 1px solid #313131; border-bottom: 1px solid #313131; border-right: 1px solid #313131; font-weight: 700;">State:</td>
+                <td style="border-bottom: 1px solid #313131; border-right: 1px solid #313131;"><apex:outputText value="{! assetRegister.Account__r.ShippingState }"/></td>
+            </tr>
+        </table>
+
+        <!-- ADDITIONAL MOVEMENT DETAILS -->
+        <table border="0" cellspacing="0" cellpadding="3" style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; width: 100%; margin-bottom: 10px; line-height: 1;">
+            <tr>
+                <td colspan="4" style="font-size: 17px; text-transform: uppercase; font-weight: 700; background-color: #dddddd; padding-left: 10px; border: 1px solid #313131;">additional movement details</td>
+            </tr>
+            <tr>
+                <td style="border-left: 1px solid #313131; border-bottom: 1px solid #313131; border-right: 1px solid #313131; font-weight: 700;">No. of Stairs/Steps: n/a</td>
+                <td style="border-right: 1px solid #313131; border-bottom: 1px solid #313131; font-weight: 700;">No. of Men Req: 1</td>
+                <td style="border-right: 1px solid #313131; border-bottom: 1px solid #313131; font-weight: 700;">Delivery Time Restrictions:</td>
+                <td style="border-right: 1px solid #313131; border-bottom: 1px solid #313131; font-weight: 700;">Over Counter<br />Lift Required: n/a</td>
+            </tr>
+            <tr>
+                <td colspan="4" style="border-left: 1px solid #313131; border-bottom: 1px solid #313131; border-right: 1px solid #313131; font-weight: 700;">Will unit fit through doorway? yes<span style="display: inline-block; width: 30px;"></span>Door Height:<span style="display: inline-block; width: 60px;"></span>mm<span style="display: inline-block; width: 30px;"></span>Door Width: <span style="display: inline-block; width: 60px;"></span>mm<br />Loading Zone Restrictions: _none<br />Dock Height minimum: -</td>
+            </tr>
+            <tr>
+                <td colspan="4" style="border-left: 1px solid #313131; border-bottom: 1px solid #313131; border-right: 1px solid #313131; font-weight: 700;">Carrier:</td>
+            </tr>
+            <tr>
+                <td colspan="4" style="border-left: 1px solid #313131; border-bottom: 1px solid #313131; border-right: 1px solid #313131; font-weight: 700;">Comments:</td>
+            </tr>
+        </table>
+
+        <!--  -->
+        <table border="0" cellspacing="0" cellpadding="3" style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; width: 100%; margin-bottom: 10px; line-height: 1;">
+            <tr>
+                <td style="border: 1px solid #313131; width: 145px;">Requested By:<br /><span style="font-size: 13px;">(please print your name)</span></td>
+                <td style="border-top: 1px solid #313131; border-right: 1px solid #313131; border-bottom: 1px solid #313131;"><apex:outputText value="{! userFullName }"/></td>
+                <td style="width: 100px; border-top: 1px solid #313131; border-right: 1px solid #313131; border-bottom: 1px solid #313131;">Date:&nbsp;<apex:outputText value="{0,date,dd/MM/yy}"><apex:param value="{! generationDate }" /></apex:outputText></td>
+            </tr>
+        </table>
+
+        <!-- AVEM QUIRKS Office Use: Freight Charge -->
+        <table border="0" cellspacing="0" cellpadding="3" style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; width: 100%; margin-bottom: 25px; line-height: 1;">
+            <tr>
+                <td colspan="2" style="font-size: 17px; text-transform: uppercase; font-weight: 700; background-color: #dddddd; padding-left: 10px; border: 1px solid #313131;">AVEM QUIRKS Office Use: Freight Charge</td>
+            </tr>
+            <tr>
+                <td style="width: 50px; font-size: 17px; font-weight: 700; border-left: 1px solid #313131; border-right: 1px solid #313131; border-bottom: 1px solid #313131;">Yes</td>
+                <td style="font-weight: 700; border-right: 1px solid #313131; border-bottom: 1px solid #313131;">Bill To:</td>
+            </tr>
+            <tr>
+                <td style="width: 50px; font-size: 17px; font-weight: 700; border-left: 1px solid #313131; border-right: 1px solid #313131; border-bottom: 1px solid #313131;">No</td>
+                <td style="font-weight: 700; border-right: 1px solid #313131; border-bottom: 1px solid #313131;">Reason:</td>
+            </tr>
+        </table>
+        
+        <!-- EMAIL -->
+        <table border="0" cellspacing="0" cellpadding="3" style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; width: 100%; line-height: 1;">
+            <tr>
+                <td style="border: 1px solid #313131; text-align: center;">
+                    <span style="font-size: 16px; text-transform: uppercase; font-weight: 700;">once completed email to:</span><br /><span>abbey.vanmeurs@avemquirks.com.au</span>
+                </td>
+            </tr>
+        </table>
+
+    </body>
+</apex:page>

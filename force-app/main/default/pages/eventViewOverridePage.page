@@ -1,0 +1,47 @@
+<apex:page standardController="Event" extensions="eventViewOverridePage_Controller">
+    <apex:slds />
+        <h2 style="font-size:20px; margin:10px 0;">
+            Related Open Objectives ({!taskz.size})
+        </h2>
+        <apex:outputPanel rendered="{!(ISNULL(taskz) || taskz.size == 0)}">No records to display</apex:outputPanel>
+        
+        <apex:outputPanel rendered="{!NOT(ISNULL(taskz) || taskz.size == 0)}">
+            <table class="slds-table slds-table_bordered slds-max-medium-table_stacked-horizontal">
+            <thead>
+                <tr class="slds-text-title_caps">
+                    <th scope="col">
+                        <div  class="slds-truncate" title="Subject">Subject</div>
+                    </th>
+                    <th scope="col">
+                        <div class="slds-truncate" title="Status">Status</div>
+                    </th>
+                    <th scope="col">
+                        <div class="slds-truncate" title="Due Date">Due Date</div>
+                    </th>
+                </tr>
+                </thead>    
+                <tbody>
+                    <apex:repeat value="{!taskz}" var="o"> 
+                        <tr class="slds-hint-parent">
+                            <td data-label="Subject">
+                                <div class="slds-truncate">
+                                    <a href="/{!o.id}">{!o.subject}</a>
+                                </div>
+                            </td>
+                            <td data-label="Status">
+                                <div class="slds-truncate">{!o.Status}</div>
+                            </td>
+                            <td data-label="Due Date">
+                                <div class="slds-truncate">
+                                    <apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+            							<apex:param value="{!o.ActivityDate}" /> 
+        							</apex:outputText></div>
+                            </td>
+                        </tr>
+                    </apex:repeat>
+                    
+                </tbody>
+            </table>
+        </apex:outputPanel>
+
+</apex:page>

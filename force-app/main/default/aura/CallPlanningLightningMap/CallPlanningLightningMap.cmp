@@ -1,0 +1,9 @@
+<aura:component description="CallPlanningLightningMap">
+
+	<aura:attribute name="markers" access="global" required="true" type="Object"/>
+
+	<div class="slds-align--absolute-center">
+		<lightning:map markersTitle="Accounts" mapMarkers="{!v.markers}" class="lightning-map"/>
+	</div>
+
+</aura:component>

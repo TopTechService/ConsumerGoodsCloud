@@ -1,0 +1,1460 @@
+<!--Created By-:      Sourav Nema
+    Created Date- :   4/10/2013
+    lastmodified BY : Gunwant Patidar
+    lastmodified date : 29/5/2013
+    -->
+
+<apex:page controller="TradeLoaderController" sidebar="false" cache="false">
+<head>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    </head>
+    <style>
+        .header {
+            text-align: center
+            white-space: normal;
+        }
+        
+        /*set Close button icon*/
+        .ui-icon {
+            background-image: url({!$Resource.JQueryUIIconSet}) !important;
+            /*images/ui-icons_888888_256x240.png) !important;*/
+        }
+        th {
+            /*background-color: rgb(0, 62, 126);*/
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            position: inherit;
+            text-align: center;
+             white-space: normal !important;
+           
+        }
+        
+        .confirm1 {
+            margin-right: 5px !important;
+        }
+        
+        .confirm2 {
+            margin-right: 360px !important;
+        }
+        
+        .confirmOk {
+            margin-right: 340px !important;
+         }
+        
+        .ui-dialog .ui-dialog-content {
+            background-color: rgb(173, 182, 212);
+        }
+        
+        .ui-dialog-titlebar {
+            background-color: #003E7E;
+            color: white;
+        }
+        
+        .pbSubheader .brandTertiaryBgr .first .tertiaryPalette {
+            background-color: rgb(198, 12, 48);
+            !
+            important
+        }
+        
+        body .bPageBlock .pbBody .dataCol {
+            width: 50px;
+        }
+        
+        .myHeader {
+            background-color: rgb(0, 62, 126);
+            
+        }
+        .pbSubheader {
+          background-color: rgb(0, 62, 126) !important;
+        }
+        .textAlignCenter {
+            text-align:center;
+        }
+        .labelCol {
+            background-color:transparent;
+        }
+    </style>
+    <apex:includeScript value="{!URLFOR($Resource.jquery, '/jquery/js/jquery.min.2.0.0.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jquery, '/jquery/js/jquery-ui-1.10.2.custom.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jquery, '/jquery/js/jquery-freezeheader.js')}"/>
+    <apex:stylesheet value="{!$Resource.JQueryUICSS}"/>
+    <script type="text/javascript">
+    
+	    function displayError(msg){
+	     
+	        var div=$("#ErrorDiv");
+	        div.html('');
+	        div.html('<p style ="font-family:Times New Roman, Times, serif;font-weight:600;font-size:15px;color:red">'+msg+'</p>');
+	        
+	        $("#ErrorDiv").dialog({
+	                                modal:true,       
+	                                width:750,
+	                                height:420,
+	                                class:'dilog',                              
+	                                close: function( event, ui ) { 
+	                                                  },
+	                                buttons: [{
+	                                            text: "OK",
+	                                            class:'confirm1',
+	                                            click: function () {
+	                                              $(this).dialog('close');
+	                                            },
+	                                        }]});   
+	     
+	     }
+	     
+	     function checkDrop1Date(){
+	     console.log('************ drop1 date check************');
+	        console.log(document.getElementById("{!$Component.form1.drop1DateValid}").value);            
+            if(document.getElementById("{!$Component.form1.drop1DateValid}").value === "No")
+                
+                displayError('Drop 1 Date should be after 2 days of today and it should not fall on weekends.');  
+                
+            else
+            
+                SelectProduct();    
+	     
+	     }
+        
+        //Arrays for confirm box
+        var ProductName = new Array();
+        var Quantity    = new Array();
+        var Quantity2    = new Array();
+        var Size        = new Array();
+        var TotalAmount = new Array();   
+        var discount    = new Array();
+        var maxDiscount = new Array();   
+        var priceList = new Array();
+        var counter =0;
+        var totalSum;
+        
+        
+        
+        //Create confirm box.
+        
+        $(document).ready(function(){
+       
+        $("#itemList").hide();
+        
+        $("#sbmt").click(function(e){
+        
+            
+        
+        //calculate total sum of quantity  in section
+        
+        var qSumOfSection1  =  getqSumOfSection1(); 
+        var qSumOfSection2  =  getqSumOfSection2();
+        var qSumOfSection3  =  getqSumOfSection3();
+        
+        var totalSumOfQ1 = 0;
+        var totalSumOfQ2 = 0;
+        var totalSumOfQ3 = 0;
+        
+        var div=$("#itemList");
+        div.html('');
+        
+        var showError =0;
+        var boxTable = '<table border ="1px" cellspacing = "0px" width ="100%"><Caption style ="color: #333333;font-family:Times New Roman, Times, serif;font-size:20px;"><b>Products selected for Sales Order</b></Caption>'+
+                       '<tr style ="color: #333333;font-family:Times New Roman, Times, serif;font-weight:600;"><td>Product Name</td><td>Drop 1 Quantity</td> <td>Drop 2 Quantity</td> <td>Size</td><td>Price</td> <td>Discount</td> <td>Total Amount</td></tr>';
+       
+       
+        
+            
+        
+        //alert('Q1 '+totalSumOfQ1 +'sec3 '+qSumOfSection1 +'Q2 '+totalSumOfQ2 +'sec2 '+qSumOfSection2);
+        
+        var drop1datevalue = getdropOneDate();
+        var drop2datevalue = getdropTwoDate();
+        var drop3datevalue = getdropThreeDate();
+        var newDropDate1 ;
+        var newDropDate2 ;
+        var newDropDate3 ;
+        var rtd1Quantity;
+        var rtd2Quantity;
+        var rtd3Quantity;
+        var glass1SprintQuantity;
+        var glass2SprintQuantity;
+        var glass3SprintQuantity;
+        var wine1Quantity;
+        var wine2Quantity;
+        var wine3Quantity;
+        var premium1Quantity;
+        var premium2Quantity;
+        var premium3Quantity;
+        var wholsalerName;
+        
+        // getting value for negative validation
+        rtd1Quantity = document.getElementById("{!$Component.form1.pb1.sec2.RTD1}").value;
+        rtd2Quantity = document.getElementById("{!$Component.form1.pb1.sec2.RTD2}").value;
+        rtd3Quantity = document.getElementById("{!$Component.form1.pb1.sec2.RTD3}").value;
+        glass1SprintQuantity = document.getElementById("{!$Component.form1.pb1.sec2.sprit1}").value;
+        glass2SprintQuantity = document.getElementById("{!$Component.form1.pb1.sec2.sprit2}").value;
+        glass3SprintQuantity = document.getElementById("{!$Component.form1.pb1.sec2.sprit3}").value;
+        wine1Quantity = document.getElementById("{!$Component.form1.pb1.sec2.wine1}").value;
+        wine2Quantity = document.getElementById("{!$Component.form1.pb1.sec2.wine2}").value;
+        wine3Quantity = document.getElementById("{!$Component.form1.pb1.sec2.wine3}").value;
+        premium1Quantity = document.getElementById("{!$Component.form1.pb1.sec2.premium1}").value;
+        premium2Quantity = document.getElementById("{!$Component.form1.pb1.sec2.premium2}").value;
+        premium3Quantity = document.getElementById("{!$Component.form1.pb1.sec2.premium3}").value;
+        
+        wholsalerName = document.getElementById("{!$Component.form1.pb1.sec1.wholesalerSection.selectList}").value;
+        
+        var promotion = document.getElementById("{!$Component.form1.pb1.sec1.promtionListId.selectPromotion}").value;
+        
+        
+        /**
+         * Product Quantity for Drop 1 should not be negative 
+         */
+         var quntity1Flag = false;
+       
+         
+        /**
+         * @description : Date format for Drop 1 and Drop 2 Date
+         * 
+         */   
+        if(drop1datevalue != ''){
+            var newDropDate = drop1datevalue.split('/');
+            newDropDate1 = new Date(newDropDate[1]+'/'+newDropDate[0]+'/'+newDropDate[2]);
+        } 
+        
+        if(drop2datevalue != ''){
+            var newDropDate = drop2datevalue.split('/');
+            newDropDate2 = new Date(newDropDate[1]+'/'+newDropDate[0]+'/'+newDropDate[2]);
+        }
+        
+        if(drop3datevalue != ''){
+            var newDropDate = drop3datevalue.split('/');
+            newDropDate3 = new Date(newDropDate[1]+'/'+newDropDate[0]+'/'+newDropDate[2]);
+        }
+                
+        var currentDate = new Date();
+        var currentday;
+        var currentmonth;
+        var currentyear;
+        
+        
+        
+        var todaysDate = new Date(currentDate.getMonth()+1 +'/' + currentDate.getDate() +'/'+currentDate.getFullYear());
+        todaysDate.setDate(todaysDate.getDate()+2);
+        
+        
+        /**
+         * @description : Checks validation on page for sales order and product quantity and dates
+         */     
+        
+        //alert('drop 2 dt'+drop2datevalue+'..undefined....'+newDropDate2.getDate());
+        if(wholsalerName == 'None'){
+            
+            displayError('Please select Wholesaler Branch Name.');
+                
+         } 
+         
+         else if(promotion == 'None'){
+         
+            displayError('You must select Promotion.');
+         
+         } 
+         
+         else if(rtd1Quantity < 0 || glass1SprintQuantity < 0 || wine1Quantity < 0 || premium1Quantity <0){
+         
+            displayError('Drop 1 Quantity cannot be negative.');
+            
+         } 
+         
+         else if(qSumOfSection1 == 0){
+         
+            displayError('Drop 1 Quantity should be greater than zero.');   
+             
+         } 
+         
+         else if(drop1datevalue == '' && qSumOfSection1 != 0){
+         
+            displayError('You must enter Drop 1 Date.');  
+        
+         } 
+         
+         else if(rtd2Quantity < 0 || glass2SprintQuantity < 0 || wine2Quantity < 0 || premium2Quantity < 0 ){
+            
+            displayError('Drop 2 Quantity cannot be negative.');  
+         
+         } 
+         
+         else  if(drop2datevalue == '' && qSumOfSection2 != 0){
+         
+            displayError('You must enter Drop 2 Date.');  
+         
+         } 
+         
+         else if ((drop2datevalue != '') && (newDropDate2 < todaysDate || newDropDate2.getDay() == 6 || newDropDate2.getDay() == 0 || newDropDate2 <= newDropDate1)){
+         
+            displayError('Drop 2 Date should be after Drop 1 date and it should not fall on weekends.');    
+              
+         } 
+         
+         else if(drop3datevalue == '' && qSumOfSection3 != 0){
+         
+            displayError('You must enter Drop 3 Date.');   
+         
+         } 
+         
+         else if (rtd3Quantity < 0 || glass3SprintQuantity < 0 || wine3Quantity < 0 || premium3Quantity < 0){
+             
+             displayError('Drop 3 Quantity cannot be negative.');   
+             
+         } 
+         
+         else if ((drop3datevalue != '') && (newDropDate3 < todaysDate || newDropDate3.getDay() == 6 || newDropDate3.getDay() == 0 || newDropDate3 <= newDropDate1)){
+             
+             displayError('Drop 3 Date should be after Drop 1 date and it should not fall on weekends.');   
+             
+         } 
+         
+         else if (newDropDate1 < todaysDate || newDropDate1.getDay() == 6 || newDropDate1.getDay() == 0){
+         
+            console.log('********************* hello ********** date 1 validations **********');
+         
+            validateDrop1Date();
+             
+         }
+         
+         else {
+         
+            SelectProduct();
+            
+         }
+        
+      });
+      
+     });
+     
+     function productList() {
+        //console.log('&&&&&&&&& productList *************');
+        var drop1LineitemQuantity = document.getElementById("{!$Component.form1.totalQuantityId1}").value;
+        
+        var drop2LineitemQuantity = document.getElementById("{!$Component.form1.totalQuantity2Id}").value;
+        var drop3LineitemQuantity = document.getElementById("{!$Component.form1.totalQuantity3Id}").value;
+        //alert('qty--' + drop1LineitemQuantity  + '-- ' + drop2LineitemQuantity + '---' + drop3LineitemQuantity );
+        var totalSumDrop1AndDrop2LineItems = Number(drop1LineitemQuantity) + Number(drop2LineitemQuantity)+ Number(drop3LineitemQuantity);
+        
+        var sumOfDrop1 = getqSumOfSection1();
+        var sumOfDrop2 = getqSumOfSection2();
+        var sumOfDrop3 = getqSumOfSection3();
+        //alert('sumofDrop1: '  +sumOfDrop1 + 'sumOfDrop2: ' + sumOfDrop2 + '---' + sumOfDrop3 );
+        
+        var totalSumofDrop1Drop2Drop3 = Number(sumOfDrop1) + Number(sumOfDrop2)+ Number(sumOfDrop3);
+        //console.log('************ drop1LineitemQuantity '+drop1LineitemQuantity);
+        //console.log(' sumofDrop1 '+sumOfDrop1);
+        
+        if(drop1LineitemQuantity == 0){
+        
+            displayError('You must enter some quantity in Drop 1 quantity column.');
+    
+        }
+        
+        else if(drop1LineitemQuantity != sumOfDrop1){
+        
+            displayError('Sum of RTD, Glass Spirits, Wine and Glass Premium for Drop 1 is not equal to Drop 1 quantity');
+                   
+        }
+        
+        else if(drop2LineitemQuantity != 0 && sumOfDrop2 == 0){
+        
+            displayError('You must enter some quantity in Drop 2 section.');
+           
+        }
+        
+        else if(drop2LineitemQuantity == 0 && sumOfDrop2 != 0){
+        
+            displayError('You must enter some quantity in Drop 2 quantity column.');
+                   
+        }
+        
+        else if(drop2LineitemQuantity != sumOfDrop2){
+        
+            displayError('Sum of RTD, Glass Spirits, Wine and Glass Premium for Drop 2 is not equal to Drop 2 quantity');
+                   
+        }
+         
+        
+        else if(drop3LineitemQuantity != 0 && sumOfDrop3 == 0){
+            
+             displayError('You must enter some quantity in Drop 3 section.');
+            
+        }
+        
+        else if(drop3LineitemQuantity == 0 && sumOfDrop3 != 0){
+             
+             displayError('You must enter some quantity in Drop 3 quantity column.');
+
+        }
+        
+        else if(drop3LineitemQuantity != sumOfDrop3){
+        
+            displayError('Sum of RTD, Glass Spirits, Wine and Glass Premium for Drop 3 is not equal to Drop 3 quantity');
+                   
+        }
+        
+        else if(totalSumDrop1AndDrop2LineItems < totalSumofDrop1Drop2Drop3){
+            //alert(totalSumDrop1AndDrop2LineItems + '--' + totalSumofDrop1Drop2Drop3 );
+            var div=$("#ErrorDiv");
+            div.html('');
+            div.html('<p style ="font-family:Times New Roman, Times, serif;font-weight:600;font-size:15px;color:red">Sum of Drop 1 and Drop 2 and Drop 3 is greater than sum of Drop 1 and Drop 2 and Drop 3 total Quantity, It will go through approval process.<br/><br/>Are you sure you want to submit this order?</p>');
+            
+            $("#ErrorDiv").dialog({
+                    modal:true,       
+                    width:900,
+                    height:420,
+                    class:'dilog',
+                   
+                    
+                    close: function( event, ui ) { 
+                                     
+                                      },
+                    buttons: [{
+                                text: "Yes",
+                                class:'confirm1',
+                                click: function () {
+                                  orderNow();
+                                  $(this).dialog('close');
+                                },
+                                },{
+                                text: "No",
+                                class:'confirm2',
+                                click: function () {
+                                      
+                                   $(this).dialog('close');
+                                },
+                            }]});
+        } else if(totalSumDrop1AndDrop2LineItems > totalSumofDrop1Drop2Drop3){
+            var div=$("#ErrorDiv");
+            div.html('');
+            div.html('<p style ="font-family:Times New Roman, Times, serif;font-weight:600;font-size:15px;color:red">Sum of Drop 1 and Drop 2 and Drop 3 is less than  total sum of Drop 1 and Drop 2 and Drop 3 Quantity.<br/><br/>Are you sure you want to submit this order?</p>');
+            
+            $("#ErrorDiv").dialog({
+                    modal:true,       
+                    width:900,
+                    height:420,
+                    class:'dilog',
+                   
+                    
+                    close: function( event, ui ) { 
+                                     
+                                      },
+                    buttons: [{
+                                text: "Yes",
+                                class:'confirm1',
+                                click: function () {
+                                  orderNow();
+                                  $(this).dialog('close');
+                                },
+                                },{
+                                text: "No",
+                                class:'confirm2',
+                                click: function () {
+                                      
+                                   $(this).dialog('close');
+                                },
+                            }]});
+        } else {
+            orderNow();
+         }
+     
+     }
+     
+     // order submit method 
+     function orderNow(){
+        var div=$("#itemList");
+        $("#itemList").dialog({
+                    modal:true,       
+                    width:900,
+                    height:420,
+                    class:'dilog',
+                   
+                    
+                    close: function( event, ui ) { 
+                                     
+                                      },
+                    buttons: [{
+                                text: "Order Now",
+                                class:'confirm1',
+                                click: function () {
+                                  doSave();
+                                  $(this).dialog('close');
+                                },
+                            },{
+                                text: "Cancel",
+                                class:'confirm2',
+                                click: function () {
+                                      
+                                   $(this).dialog('close');
+                    },
+           }]}); 
+     
+     }
+     
+     function getTotalPriceByDiscount(val){
+     
+        
+        var disc = document.getElementById(val).value;
+        var div=$("#itemList");
+        div.html('');
+        if(disc<0){
+            
+            displayError('Discount can not be negative.');
+            
+            document.getElementById(val).value = '';               
+            
+        } else {
+        
+            var disclastdigit = Number(val.substring(val.length-3,val.length));
+            
+            var pricelastDigit = Number(disclastdigit)-16;
+                    
+                
+            var idString = val.substring(0,val.length-3);
+            
+            var quantity3lastDigit = Number(disclastdigit)-2;
+            var quantity3Id = idString+quantity3lastDigit;
+            
+            var quantity1lastDigit = Number(disclastdigit)-6;
+            
+            var quantity1Id = idString+quantity1lastDigit;
+            
+            var quantity2lastDigit = Number(quantity1lastDigit)+2
+            
+            var quantity2Id = idString+quantity2lastDigit;
+                
+            var quantity1Value = document.getElementById(quantity1Id).value;
+            
+            var quantity2Value = document.getElementById(quantity2Id).value;
+            var quantity3Value = document.getElementById(quantity3Id).value;
+           
+            var priceId = idString + pricelastDigit;
+            
+            var am = Number(disclastdigit)+3;
+            var amountId = idString+am;
+            var totalQuantityLastDigit = Number(disclastdigit)+1;
+            var totalQuantityId = idString+totalQuantityLastDigit;
+            
+            
+            var pricevalue = document.getElementById(priceId).innerHTML.replace( /^\D+/g, '');
+            
+            
+            
+            var totalQuantity = Number(quantity1Value)+Number(quantity2Value)+Number(quantity3Value);
+            var priceAfterDisc = Number(pricevalue)-Number(disc);
+            
+            //Find the current promotion discount
+        
+            var currentPromoDiscount = Number(document.getElementById(idString+(quantity1lastDigit-4)).innerHTML.replace( /^\D+/g, ''));
+            
+            if(currentPromoDiscount > Number(disc))
+        
+                priceAfterDisc = Number(pricevalue) - currentPromoDiscount;              
+            
+            if(quantity1Value == '' && quantity2Value == '' && quantity3Value == ''){
+                document.getElementById(amountId).innerHTML = '';
+            } else{
+                document.getElementById(totalQuantityId).innerHTML = totalQuantity;
+                document.getElementById(amountId).innerHTML =  '$&nbsp;' + Number(Number(priceAfterDisc) * Number(totalQuantity)).toFixed(2);
+            }
+        }
+        
+     }
+     
+     function getTotalPriceByQuantity1(val){
+        var div=$("#itemList");
+        div.html('');
+        if(document.getElementById('j_id0:form1:pb1:selectedPromotionSection:promotionDataTable:0:j_id37') == null){
+        
+            displayError('Please select the promotion.');
+            
+            document.getElementById(val).value = '';
+            
+        }
+        
+        var quantity1Value = document.getElementById(val).value;
+        var quantity1lastDigit = Number(val.substring(val.length-3,val.length));
+            
+        var pricelastDigit = Number(quantity1lastDigit)-10;
+                
+        var idString = val.substring(0,val.length-3);
+        
+        
+        var quantity3lastDigit = Number(quantity1lastDigit)+4;
+        
+        var quantity3Id = idString+quantity3lastDigit;
+        
+        var quantity3Value = document.getElementById(quantity3Id).value;
+        
+        var disclastDigit = Number(quantity1lastDigit)+6;
+        
+        var discId = idString+disclastDigit;
+        
+        var disc = document.getElementById(discId).value;
+        
+        //var quantity1Value = document.getElementById(quantity1Id).value;
+        
+        var quantity2lastDigit = Number(quantity1lastDigit)+2;
+        
+        var quantity2Id = idString+quantity2lastDigit;
+            
+        var quantity2Value = document.getElementById(quantity2Id).value;
+        
+        var priceId = idString + pricelastDigit;
+        
+        var am = Number(disclastDigit)+3;
+        var amountId = idString+am;
+        
+        var totalQuantityLastDigit = Number(disclastDigit)+1;
+        var totalQuantityId = idString+totalQuantityLastDigit;
+        
+        var pricevalue = document.getElementById(priceId).innerHTML.replace( /^\D+/g, '');
+        
+        //Find the current promotion discount
+        
+        var currentPromoDiscount = Number(document.getElementById(idString+(quantity1lastDigit-4)).innerHTML.replace( /^\D+/g, ''));
+        
+        var totalQuantity ;
+        
+        var priceAfterDisc = Number(pricevalue)-Number(disc);
+        
+        if(currentPromoDiscount > Number(disc))
+        
+            priceAfterDisc = Number(pricevalue) - currentPromoDiscount;
+        
+        if((quantity1Value<0 || quantity1Value == 0) && (quantity1Value != '')){
+            displayError('Drop 1 Quantity can not be negative or Zero.');
+            
+            document.getElementById(val).value = '';
+            quantity1Value ='';
+            totalQuantity = Number(quantity1Value)+Number(quantity2Value)+Number(quantity2Value);
+            if(quantity1Value == '' && quantity2Value == ''){
+              document.getElementById(amountId).innerHTML = '';
+            } else {
+              TotalSumofQuantity();
+              document.getElementById(amountId).innerHTML =  '$&nbsp;' + Number(Number(priceAfterDisc) * Number(totalQuantity)).toFixed(2);
+            }               
+            
+        } else {
+            if(quantity1Value == '' && quantity2Value == '' && quantity3Value == ''){
+                document.getElementById(amountId).innerHTML = '';
+                document.getElementById(totalQuantityId).innerHTML = '';
+            } else {
+                TotalSumofQuantity();
+                totalQuantity = Number(quantity1Value)+Number(quantity2Value)+Number(quantity3Value);
+                document.getElementById(totalQuantityId).innerHTML = totalQuantity;
+                document.getElementById(amountId).innerHTML =  '$&nbsp;' + Number(Number(priceAfterDisc) * Number(totalQuantity)).toFixed(2);
+            }
+        }
+     }
+     
+     function getTotalPriceByQuantity2(val){
+
+        var div=$("#itemList");
+        div.html('');
+        if(document.getElementById('j_id0:form1:pb1:selectedPromotionSection:promotionDataTable:0:j_id37') == null){
+        
+            displayError('Please select the promotion.');
+            
+            document.getElementById(val).value = '';
+        } else {
+            var dealSizeVal =  document.getElementById('j_id0:form1:pb1:selectedPromotionSection:promotionDataTable:0:j_id37').innerHTML;
+            if(dealSizeVal == 60){
+                displayError('Deal size 60 can not have drop 2 quantity.');
+                document.getElementById(val).value = '';
+            }
+        }
+     
+        var quantity2Value = document.getElementById(val).value;
+        var quantity2lastDigit = Number(val.substring(val.length-3,val.length));
+        var pricelastDigit = Number(quantity2lastDigit)-12;
+        var idString = val.substring(0,val.length-3);
+        
+        var quantity3lastDigit = Number(quantity2lastDigit)+2;
+        var quantity3Id = idString+quantity3lastDigit;
+        var quantity3Value = document.getElementById(quantity3Id).value;
+        
+        
+        var disclastDigit = Number(quantity2lastDigit)+4;
+        var discId = idString+disclastDigit;
+        var disc = document.getElementById(discId).value;
+        
+        
+        
+        var quantity1lastDigit = Number(quantity2lastDigit)-2
+        
+        var quantity1Id = idString+quantity1lastDigit;
+            
+        var quantity1Value = document.getElementById(quantity1Id).value;
+        
+        var priceId = idString + pricelastDigit;
+        
+        var am = Number(disclastDigit)+3;
+        var amountId = idString+am;
+        
+        var totalQuantityLastDigit = Number(disclastDigit)+1;
+        var totalQuantityId = idString+totalQuantityLastDigit;
+        
+        var pricevalue = document.getElementById(priceId).innerHTML.replace( /^\D+/g, '');
+        
+        var totalQuantity;
+        var priceAfterDisc = Number(pricevalue)-Number(disc);
+        
+        //Find the current promotion discount
+        
+        var currentPromoDiscount = Number(document.getElementById(idString+(quantity1lastDigit-4)).innerHTML.replace( /^\D+/g, ''));
+        
+        if(currentPromoDiscount > Number(disc))
+        
+            priceAfterDisc = Number(pricevalue) - currentPromoDiscount;
+        
+        if((quantity2Value<0 || quantity2Value == 0) && (quantity2Value != '')){
+        
+            displayError('Drop 2 Quantity can not be negative or Zero.');
+            
+            document.getElementById(val).value = '';
+            quantity2Value = '';
+            totalQuantity = Number(quantity1Value)+Number(quantity2Value)+Number(quantity3Value);
+           
+            if(quantity1Value == '' && quantity2Value == '' && quantity3Value == ''){
+              document.getElementById(amountId).innerHTML = '';
+              TotalSumofQuantity();
+            } else {
+              TotalSumofQuantity();
+              document.getElementById(amountId).innerHTML = '$&nbsp;' + Number(Number(priceAfterDisc) * Number(totalQuantity)).toFixed(2);
+            }              
+            
+        } else {
+            if(quantity1Value == '' && quantity2Value == '' && quantity3Value == ''){
+                document.getElementById(amountId).innerHTML = '';
+                document.getElementById(totalQuantityId).innerHTML = '';
+                
+            } else {
+                TotalSumofQuantity();
+                
+                totalQuantity = Number(quantity1Value)+Number(quantity2Value)+Number(quantity3Value);
+                document.getElementById(totalQuantityId).innerHTML = totalQuantity;
+                document.getElementById(amountId).innerHTML =  '$&nbsp;' + Number(Number(priceAfterDisc) * Number(totalQuantity)).toFixed(2);
+                
+            }
+        }
+     }
+     function getTotalPriceByQuantity3(val){
+
+        var div=$("#itemList");
+        div.html('');
+        
+        if(document.getElementById('j_id0:form1:pb1:selectedPromotionSection:promotionDataTable:0:j_id37') == null){
+            
+            displayError('Please select the promotion.');
+            
+            document.getElementById(val).value = '';
+        } 
+        
+        else {
+            var dealSizeVal =  document.getElementById('j_id0:form1:pb1:selectedPromotionSection:promotionDataTable:0:j_id37').innerHTML;
+            if(dealSizeVal == 60){
+            
+                displayError('Deal size 60 can not have drop 3 quantity.');
+                
+                document.getElementById(val).value = '';
+            }
+        }
+     
+        var quantity3Value = document.getElementById(val).value;
+        var quantity3lastDigit = Number(val.substring(val.length-3,val.length));
+        var pricelastDigit = Number(quantity3lastDigit)-14;      
+            
+        var idString = val.substring(0,val.length-3);
+        
+       
+        var quantity2lastDigit = Number(quantity3lastDigit)-2;
+        var quantity2Id    = idString+quantity2lastDigit;
+        var quantity2Value = document.getElementById(quantity2Id).value;
+        
+        var disclastDigit = Number(quantity2lastDigit)+4;
+        var discId = idString+disclastDigit;
+        var disc = document.getElementById(discId).value;
+        
+        
+        
+        var quantity1lastDigit = Number(quantity2lastDigit)-2
+        
+        var quantity1Id = idString+quantity1lastDigit;
+            
+        var quantity1Value = document.getElementById(quantity1Id).value;
+        
+        var priceId = idString + pricelastDigit;
+        
+        var am = Number(disclastDigit)+3;
+        var amountId = idString+am;
+        
+        var totalQuantityLastDigit = Number(disclastDigit)+1;
+        var totalQuantityId = idString+totalQuantityLastDigit;
+        var pricevalue = document.getElementById(priceId).innerHTML.replace( /^\D+/g, '');
+        
+        var totalQuantity;
+        var priceAfterDisc = Number(pricevalue)-Number(disc);
+        
+        //Find the current promotion discount
+        
+        var currentPromoDiscount = Number(document.getElementById(idString+(quantity1lastDigit-4)).innerHTML.replace( /^\D+/g, ''));
+        
+        if(currentPromoDiscount > Number(disc))
+        
+            priceAfterDisc = Number(pricevalue) - currentPromoDiscount;    
+        
+        if((quantity3Value<0 || quantity3Value == 0) && (quantity3Value != '')){
+        
+            displayError('Drop 2 Quantity can not be negative or Zero.');
+            
+           
+            document.getElementById(val).value = '';
+            quantity3Value = '';
+            totalQuantity = Number(quantity1Value)+Number(quantity2Value)+Number(quantity3Value);
+           
+            if(quantity1Value == '' && quantity2Value == '' && quantity3Value == ''){
+              document.getElementById(amountId).innerHTML = '';
+              TotalSumofQuantity();
+            } else {
+              TotalSumofQuantity();
+              document.getElementById(amountId).innerHTML = '$&nbsp;' + Number(Number(priceAfterDisc) * Number(totalQuantity)).toFixed(2);
+            }              
+            
+        } else {
+            if(quantity1Value == '' && quantity2Value == '' && quantity3Value == ''){
+                document.getElementById(amountId).innerHTML = '';
+                document.getElementById(totalQuantityId).innerHTML = '';
+                
+            } else {
+                TotalSumofQuantity();
+                
+                totalQuantity = Number(quantity1Value)+Number(quantity2Value)+Number(quantity3Value);
+                document.getElementById(totalQuantityId).innerHTML = totalQuantity;
+                document.getElementById(amountId).innerHTML =  '$&nbsp;' + Number(Number(priceAfterDisc) * Number(totalQuantity)).toFixed(2);
+            }
+        }
+     }
+     
+     function back(){
+         window.location.replace('/{!acId}');
+     }
+  
+     var number ='';
+     var myarrs = new Array();
+     var afterCancel =0;
+     
+        
+     
+        
+
+      
+        //Get qSumOfSection1
+      
+        function getqSumOfSection1(){
+      
+            var inp1 = document.getElementById("{!$Component.form1.pb1.sec2.RTD1}").value;
+            var inp2 = document.getElementById("{!$Component.form1.pb1.sec2.sprit1}").value;
+            var inp3 = document.getElementById("{!$Component.form1.pb1.sec2.wine1}").value;
+            var inp4 = document.getElementById("{!$Component.form1.pb1.sec2.premium1}").value;
+            if(inp1=='' || inp1==null){
+          
+                inp1 =0;
+            }
+          
+            if(inp2=='' || inp2==null){
+          
+                inp2 =0;
+            }
+            if(inp3=='' || inp3==null){
+          
+                inp3 =0;
+            }
+            if(inp4=='' || inp4==null){
+          
+                inp4 =0;
+            }
+            var total =Number(inp1)+Number(inp2)+Number(inp3)+Number(inp4);
+            return total;
+      
+        }
+      
+      
+        //Get qSumOfSection2
+      
+        function getqSumOfSection2(){
+      
+            var inp1 = document.getElementById("{!$Component.form1.pb1.sec2.RTD2}").value;
+            var inp2 = document.getElementById("{!$Component.form1.pb1.sec2.sprit2}").value;
+            var inp3 = document.getElementById("{!$Component.form1.pb1.sec2.wine2}").value;
+            var inp4 = document.getElementById("{!$Component.form1.pb1.sec2.premium2}").value;
+          
+            if(inp1=='' || inp1==null){
+          
+                inp1 =0;
+            }
+          
+            if(inp2=='' || inp2==null){
+          
+                inp2 =0;
+            }
+            if(inp3=='' || inp3==null){
+          
+                inp3 =0;
+            }
+            
+            if(inp4=='' || inp4==null){
+          
+                inp4 =0;
+            }
+          
+            var total =Number(inp1)+Number(inp2)+Number(inp3)+Number(inp4);
+            return total;
+      
+        }
+        //Get qSumOfSection3
+      
+        function getqSumOfSection3(){
+      
+            var inp1 = document.getElementById("{!$Component.form1.pb1.sec2.RTD3}").value;
+            var inp2 = document.getElementById("{!$Component.form1.pb1.sec2.sprit3}").value;
+            var inp3 = document.getElementById("{!$Component.form1.pb1.sec2.wine3}").value;
+            var inp4 = document.getElementById("{!$Component.form1.pb1.sec2.premium3}").value;
+          
+            if(inp1=='' || inp1==null){
+          
+                inp1 =0;
+            }
+          
+            if(inp2=='' || inp2==null){
+          
+                inp2 =0;
+            }
+            if(inp3=='' || inp3==null){
+          
+                inp3 =0;
+            }
+            
+            if(inp4=='' || inp4==null){
+          
+                inp4 =0;
+            }
+          
+            var total =Number(inp1)+Number(inp2)+Number(inp3)+Number(inp4);
+            return total;
+      
+        }
+        
+        function getdropOneDate(){
+            var drop1date = document.getElementById("{!$Component.form1.pb1.sec2.drop1date}").value;
+            
+            return drop1date;
+        
+        }
+        
+        function getdropTwoDate(){
+            var drop2date = document.getElementById("{!$Component.form1.pb1.sec2.drop2date}").value;
+            
+            return drop2date;
+        
+        }
+        function getdropThreeDate(){
+            var drop3date = document.getElementById("{!$Component.form1.pb1.sec2.drop3date}").value;
+            
+            return drop3date;
+        
+        }
+        
+        function showErrorMessageForDeal60(val){
+            var div=$("#itemList");
+            if(document.getElementById('j_id0:form1:pb1:selectedPromotionSection:promotionDataTable:0:j_id37') == null){
+            div.html('<p style ="font-family:Times New Roman, Times, serif;font-weight:600;font-size:15px;color:red">Please select the promotion. </p>');
+            
+            $("#itemList").dialog({
+                    modal:true,       
+                    width:750,
+                    height:420,
+                    class:'dilog',
+                   
+                    
+                    close: function( event, ui ) { 
+                                     
+                                      },
+                    buttons: [{
+                                text: "OK",
+                                class:'confirmOk',  
+                                click: function () {
+                                  
+                                  $(this).dialog('close');
+                                },
+                            }]});
+                  document.getElementById(val).value = '';
+        } else {
+            var dealSizeVal =  document.getElementById('j_id0:form1:pb1:selectedPromotionSection:promotionDataTable:0:j_id37').innerHTML;
+            if(dealSizeVal == 60){
+                div.html('<p style ="font-family:Times New Roman, Times, serif;font-weight:600;font-size:15px;color:red">Deal size 60 can not have drop 2 and drop 3 value.</p>');
+                
+                $("#itemList").dialog({
+                        modal:true,       
+                        width:750,
+                        height:420,
+                        class:'dilog',
+                       
+                        
+                        close: function( event, ui ) { 
+                                         
+                                          },
+                        buttons: [{
+                                    text: "OK",
+                                    class:'confirmOk',  
+                                    click: function () {
+                                      
+                                      $(this).dialog('close');
+                                    },
+                                }]});
+                      document.getElementById(val).value = '';
+            }
+        }
+        }
+    </script>
+    <apex:outputPanel rendered="{!hideRestItems}">
+        <apex:form id="form1">            
+            <apex:actionFunction action="{!save}" name="doSave" />
+            <apex:actionFunction action="{!validateDrop1Date}" name="validateDrop1Date" rerender="drop1DateValid" oncomplete="checkDrop1Date();"/>
+            
+            <apex:actionFunction action="{!showWholesalerGroup}" name="showWholesaler" rerender="wholesalerGroupId"/>
+            
+            <apex:actionFunction name="SelectProduct" rerender="error,selectedProductPanel,totalQuantityId1,totalQuantity2Id, totalQuantity3Id" action="{!addSelectedProducts}" oncomplete="productList()" />
+            <apex:actionFunction name="TotalSumofQuantity" rerender="drop1sumtotalPanel" action="{!addSelectedProducts}"/>
+            
+            <apex:actionFunction name="PopulateFields" action="{!populateSalesOrderFields}" rerender="wine1,sprit1,RTD1,premium1,reward,Extrareward,team,size,rewardText,selectedPromotionSection"/>
+            
+            <apex:outputPanel id="error">
+                <apex:messages />
+            </apex:outputPanel>
+        
+        
+            <apex:pageBlock tabStyle="Sales_Order__c" id="pb1">
+            
+               
+                
+                <apex:pageBlockSection columns="2" title="Sales Order Information" id="sec1" >
+                    <apex:pageBlockSectionItem id="wholesalerSection">
+                        <b style ="color:#4a4a56;font-size: 100%;font-weight: bold;">Wholesaler Branch Name</b>
+                        
+                        <apex:selectList value="{!wAccount}" size="1"  id="selectList" onchange="showWholesaler()" style="position:relative;">
+                            <apex:selectOptions value="{!items}"/>
+                        </apex:selectList>  
+                   </apex:pageBlockSectionItem>
+                   
+                   
+                   
+                   <apex:outputField value="{!salesRecord.Outlet_Name__c}" />
+                   
+                   <apex:pageBlockSectionItem id="promtionListId">
+                        <b style ="color:#4a4a56;font-size: 100%;font-weight: bold;">Promotion</b>
+                        
+                        <apex:selectList value="{!promtionId}" size="1"  id="selectPromotion" onchange="PopulateFields(this.value)" style="position:relative;">
+                            <apex:selectOptions value="{!OnPromotions}"/>
+                        </apex:selectList>  
+                   </apex:pageBlockSectionItem>
+                   
+                   <apex:inputField value="{!salesRecord.Customer_PO_Number__c}"/>
+                        
+                </apex:pageBlockSection>
+                
+                <!-- ******* Promotion selected table   ***** -->   
+                <apex:pageBlockSection columns="1" title="Selected Promotion Details" id="selectedPromotionSection" >                
+                    <apex:outputPanel rendered="true">
+                    
+                        <apex:DataTable value="{!selectedPromotion}" var="promotion" width="99%" cellspacing="2" headerClass="myHeader" id="promotionDataTable">
+                    
+                        <apex:column width="15%" style="font-size:1em;text-align:center;">
+                            <apex:facet name="header">Promotion Name</apex:facet>
+                            <apex:outputText value="{!promotion.Name}" />
+                        </apex:column>
+                        
+                        <apex:column width="5%" style="font-size:1em;text-align:center;">
+                            <apex:facet name="header">RTD # </apex:facet>
+                            <apex:outputText value="{!promotion.RTD__c}" />
+                        </apex:column>
+                        <apex:column width="5%" style="font-size:1em;text-align:center;">
+                            <apex:facet name="header">Glass Spirits #</apex:facet>
+                            <apex:outputText value="{!promotion.Glass_Spirits__c}" />
+                        </apex:column>
+                        <apex:column width="5%" style="font-size:1em;text-align:center;">
+                            <apex:facet name="header">Wine #</apex:facet>
+                            <apex:outputText value="{!promotion.Wine__c}" />
+                        </apex:column>
+                         <apex:column width="5%" style="font-size:1em;text-align:center;">
+                            <apex:facet name="header">Glass Premium #</apex:facet>
+                            <apex:outputText value="{!promotion.Glass_Premium__c    }" />
+                        </apex:column>
+                        
+                        <apex:column width="5%" style="font-size:1em;text-align:center;">
+                            <apex:facet name="header">Deal Size</apex:facet>
+                            <apex:outputText value="{!promotion.Deal_Size__c}" />
+                        </apex:column>
+                        <apex:column width="10%" style="font-size:1em;text-align:center;">
+                            <apex:facet name="header">Reward</apex:facet>
+                            <apex:outputText value="{!promotion.Reward__c}" />
+                        </apex:column>      
+                        
+                        </apex:DataTable>
+                    </apex:outputPanel>
+                </apex:pageBlockSection>
+                
+                <apex:pageBlockSection columns="3" title="Quantity Information" id="sec2">
+    
+                    <apex:inputField value="{!salesRecord.RTD_Drop_1__c}"
+                        TAborderhint="1"  id="RTD1"></apex:inputField>
+    
+                    <apex:inputField value="{!salesRecord.RTD_Drop_2__c}"
+                        TAborderhint="1"  id="RTD2" onchange="showErrorMessageForDeal60(this.id)"/>
+                        
+                     <apex:inputField value="{!salesRecord.RTD_Drop_3__c}"
+                        TAborderhint="1" id="RTD3" onchange="showErrorMessageForDeal60(this.id)"/>
+                           
+                    <apex:inputField value="{!salesRecord.Glass_Spirits_Drop_1__c}"
+                        TAborderhint="1" id="sprit1"/>
+    
+                    <apex:inputField value="{!salesRecord.Glass_Spirits_Drop_2__c}"
+                        TAborderhint="1" id="sprit2" onchange="showErrorMessageForDeal60(this.id)"/>
+                        
+                     <apex:inputField value="{!salesRecord.Glass_Spirits_Drop_3__c}"
+                        TAborderhint="1" id="sprit3" onchange="showErrorMessageForDeal60(this.id)"/>
+                        
+                    <apex:inputField value="{!salesRecord.Wine_Drop_1__c}"
+                        TAborderhint="1" id="wine1" />
+    
+                    <apex:inputField value="{!salesRecord.Wine_Drop_2__c}"
+                        TAborderhint="1" id="wine2" onchange="showErrorMessageForDeal60(this.id)"/>
+                    
+                     <apex:inputField value="{!salesRecord.Wine_Drop_3__c}"
+                        TAborderhint="1" id="wine3" onchange="showErrorMessageForDeal60(this.id)"/>
+                        
+                    <apex:inputField value="{!salesRecord.Glass_Premium_Drop_1__c}"
+                        TAborderhint="1" id="premium1"/>
+                     
+                     <apex:inputField value="{!salesRecord.Glass_Premium_Drop_2__c}"
+                        TAborderhint="1" id="premium2" onchange="showErrorMessageForDeal60(this.id)"/>
+                        
+                      <apex:inputField value="{!salesRecord.Glass_Premium_Drop_3__c}"
+                        TAborderhint="1" id="premium3" onchange="showErrorMessageForDeal60(this.id)"/>       
+    
+                    <apex:inputField value="{!salesRecord.Drop_1_Date__c}"
+                        TAborderhint="1" id="drop1date"></apex:inputField>
+    
+                    <apex:inputField value="{!salesRecord.Drop_2_Date__c}"
+                        TAborderhint="1" id="drop2date"></apex:inputField>
+                    <apex:inputField value="{!salesRecord.Drop_3_Date__c}"
+                        TAborderhint="1" id="drop3date"></apex:inputField>
+                    
+                </apex:pageBlockSection>
+    
+    
+                <apex:pageBlockSection columns="2" title="Reward Information">
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel >Reward</apex:outputLabel>
+                        <apex:outputText value="{!rewardName}" id="rewardText"></apex:outputText>
+                    </apex:pageBlockSectionItem>
+                    <apex:inputField value="{!salesRecord.Size__c}" TAborderhint="1" id="size"/>
+    
+                    <apex:inputField value="{!salesRecord.Extra_Reward__c}"
+                        TAborderhint="1" id="Extrareward">
+                        <apex:actionSupport event="onchange" rerender="team,size" />
+                       </apex:inputField>
+    
+                    <apex:inputField value="{!salesRecord.Team__c}" TAborderhint="1" id="team"/>
+    
+                    <apex:inputField value="{!salesRecord.EFTPOS_Card_Number__c}"
+                        TAborderhint="1" />
+    
+                </apex:pageBlockSection>
+                
+                <!-- ******* This is a hidden field but it is required to display it's dependant picklist value********* -->
+                <div style ="display:none;">
+                    <apex:inputField value="{!salesRecord.Reward__c}" id="reward">
+                        <apex:actionSupport event="onchange" rerender="Extrareward" />  
+                    </apex:inputField>
+                </div>
+            </apex:pageBlock> 
+            <div  style="background-color: rgb(0, 62, 126); height: 20px; color: White; text-align: left; font-weight: bold; width:99%">Sales Order Product
+            
+                <br/>
+                <apex:outputPanel id="drop1sumtotalPanel">
+                    <div style ="position: relative;left: 64%;top: -15px;color:black;color:white;" id = "drop1SumId">{!totalQuantityDrop1}</div>
+                    <div style ="position: relative;left: 70%;top: -30px;color:black;color:white;" id = "drop2SumId">{!totalQuantityDrop2}</div>
+                    <div style ="position: relative;left: 76%;top: -45px;color:black;color:white;" id = "drop3SumId">{!totalQuantityDrop3}</div>
+                </apex:outputPanel>
+                
+            </div>
+               
+            <div style="background:#eddbc3;height:0px;width:0px;position:absolute;border:thin;display:none;" id ="animatedBox"></div>
+            <div style="align: center;width: 100%">
+            
+                <!-- ********* Header table ********* -->
+                <apex:dataTable value="{!headerList}" var="temporderProduct" width="99%" cellspacing="2" headerClass="myHeader">
+                    
+                    <apex:column width="5%" styleClass="align:center" >
+                        <apex:facet name="header">Wholesaler Group Code</apex:facet>
+                    </apex:column>
+                    
+                    <apex:column width="17%" styleClass="align:center" >
+                        <apex:facet name="header">Product Name</apex:facet>
+                    </apex:column>
+                    <apex:column width="5%" styleClass="align:center" >
+                        <apex:facet name="header">Start date</apex:facet>
+                    </apex:column>
+                    <apex:column width="5%" styleClass="align:center" >
+                        <apex:facet name="header">End date</apex:facet>
+                    </apex:column>
+                    
+                    <apex:column width="4%" style="font-size:1em">
+                        <apex:facet name="header">Units per case</apex:facet>
+                    </apex:column>
+                    
+                    
+                    <apex:column width="7%">
+                        <apex:facet name="header">Price</apex:facet>
+                    </apex:column>
+                    <apex:column width="6%">
+                        <apex:facet name="header">Maximum Discount</apex:facet>
+                    </apex:column>
+                    <apex:column width="6%">
+                        <apex:facet name="header">Current Promo Disc</apex:facet>
+                    </apex:column>
+                    <apex:column width="6%">
+                        <apex:facet name="header">Drop 1 Quantity</apex:facet>
+                    </apex:column>
+                    <apex:column width="6%">
+                        <apex:facet name="header">Drop 2 Quantity</apex:facet>
+                    </apex:column>
+                    <apex:column width="6%">
+                        <apex:facet name="header">Drop 3 Quantity</apex:facet>
+                    </apex:column>
+                     <apex:column width="6%">
+                        <apex:facet name="header">Disc Given</apex:facet>
+                    </apex:column>
+                    <apex:column width="6%">
+                        <apex:facet name="header">Total Quantity</apex:facet>
+                    </apex:column>
+                    
+                    <apex:column width="6%">
+                        <apex:facet name="header">Total Amount</apex:facet>
+                    </apex:column>
+                    
+                    <apex:column width="16%">
+                        <apex:facet name="header">Comments</apex:facet>
+                    </apex:column>
+                    
+                </apex:dataTable>
+            </div>
+        
+         
+             <!-- ********  Line item table    ********* -->
+             <div style="overflow-x: hidden; overflow-y: scroll; align: center; height: 450px; width: 100%">
+                <apex:dataTable value="{!orderLineItemsToBeDisplayed}" var="orderProduct" width="100%" cellspacing="2"  id="ProductTable" style="text-align:center">
+                    
+                    <apex:column width="5%" style="color:{!orderProduct.rowColor}">
+                        <apex:outputText value="{!orderProduct.wholesalerGroupCode}" style="width:50%" id="wholesalerGroupId"/>
+                    </apex:column>
+                    <apex:column width="17%" style="text-align:left;padding:5px;color:{!orderProduct.rowColor}">
+                        <apex:outputText value="{!orderProduct.productsData.Name}"></apex:outputText>
+                    </apex:column>
+                    <apex:column width="5%" style="text-align:center;padding:5px;color:{!orderProduct.rowColor}">
+                        <apex:outputText value="{0,date,dd/MM/yy}">
+                            <apex:param value="{!orderProduct.promoStartDate}" /> 
+                        </apex:outputText>
+                    </apex:column>
+                    <apex:column width="5%" style="text-align:center;padding:5px;color:{!orderProduct.rowColor}">
+                        <apex:outputText value="{0,date,dd/MM/yy}">
+                            <apex:param value="{!orderProduct.promoEndDate}" /> 
+                        </apex:outputText>
+                    </apex:column>
+                    <apex:column width="4%" style="color:{!orderProduct.rowColor}">
+                        <apex:outputText value="{!orderProduct.productsData.Bottles_Per_Carton__c}"></apex:outputText>
+                    </apex:column>
+                    <apex:column width="7%" style="color:{!orderProduct.rowColor}">
+                        <apex:outputText value="{!orderProduct.productPrice.Wholesaler_Price__c}">$&nbsp;</apex:outputText>
+                    </apex:column>
+                    <apex:column width="6%" style="color:{!orderProduct.rowColor}">
+                        <apex:outputText value="{!orderProduct.productPrice.Maximum_Discount__c}" >$&nbsp;</apex:outputText>
+                    </apex:column>
+                    <apex:column width="6%" style="color:{!orderProduct.rowColor}">
+                        <apex:outputText value="{!orderProduct.promotionDiscount}" >$&nbsp;</apex:outputText>
+                    </apex:column>
+                    <apex:column width="6%">
+                        <apex:inputField value="{!orderProduct.salesOrderProducts.Quantity__c}" style="width:50%" onchange="getTotalPriceByQuantity1(this.id)"></apex:inputField>
+                    </apex:column>
+                    <apex:column width="6%">
+                        <apex:inputField value="{!orderProduct.salesOrderProducts.Quantity_2__c}" style="width:50%" onchange="getTotalPriceByQuantity2(this.id)"></apex:inputField>
+                    </apex:column>
+                    <apex:column width="6%">
+                        <apex:inputField value="{!orderProduct.salesOrderProducts.Quantity_3__c}" style="width:50%" onchange="getTotalPriceByQuantity3(this.id)"></apex:inputField>
+                    </apex:column>
+                     <apex:column width="6%">
+                        <apex:inputField value="{!orderProduct.salesOrderProducts.Discount__c}" style="width:50%" onchange="getTotalPriceByDiscount(this.id)"></apex:inputField>
+                    </apex:column>
+                    <apex:column width="6%" style="color:{!orderProduct.rowColor}">
+                        <apex:outputText value="{!orderProduct.totalQuantity}"></apex:outputText>
+                    </apex:column>
+                    <apex:column width="6%" style="color:{!orderProduct.rowColor}">
+                        <apex:outputText value="{!orderProduct.productTotalAmount}" id="totalAmountID"></apex:outputText>   
+                    </apex:column>
+                    <apex:column width="16%">
+                        <apex:inputField value="{!orderProduct.salesOrderProducts.Comments__c}" style="width:60%"></apex:inputField>
+                    </apex:column>
+                </apex:dataTable>
+             </div>
+         
+             <!-- ********* Dialog box table ********* -->
+             <apex:outputPanel id="selectedProductPanel" style="display: none">
+              
+                <div id="itemList" title="Sales Order Summary" style="color: white;  background: none repeat scroll 0 0 #ADB6D4;display: none"> 
+                    <table width="100%" cellspacing="0" border="1"  style="text-align:center;">
+                        <colgroup>
+                            <col width="25%"/>
+                            <col width="8%"/>
+                            <col width="8%"/>
+                            <col width="8%"/>
+                            <col width="5%"/>
+                            <col width="9%"/>
+                            <col width="9%"/>
+                            <col width="10%"/>
+                            <col width="5%"/>
+                        </colgroup>
+                        <thead>
+                            <tr style="background-color: rgb(0, 62, 126);color:white;">
+                                <th>Product Name</th>
+                                <th>Drop 1 Qty</th>
+                                <th>Drop 2 Qty</th>
+                                <th>Drop 3 Qty</th>
+                                <th>Total Quantity</th>
+                                <th>Price</th>
+                                <th>Discount</th>
+                                <th>Applied Discount</th>
+                                <th>Total Amount</th>
+                                <th>Need Approval</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <apex:repeat value="{!orderLineItemsSelected}" var="orderProduct" >
+                                <tr>
+                                    <td class="textAlignCenter" >
+                                        <apex:outputText value="{!orderProduct.productsData.Name}"  rendered="{!if(orderProduct.needApproval == 'Yes', true, false)}" style="color:red;text-align:center;"></apex:outputText>
+                                        
+                                        <apex:outputText value="{!orderProduct.productsData.Name}"  rendered="{!if(orderProduct.needApproval == 'No', true, false)}" style="text-align:center;"></apex:outputText>
+                                    </td>
+                                    <td class="textAlignCenter" >
+                                        <apex:outputText value="{0, number, 0.00}"  rendered="{!if(orderProduct.needApproval == 'Yes', true, false)}" style="color:red;text-align:center;">
+                                            <apex:param value="{!orderProduct.salesOrderProducts.Quantity__c}" />
+                                        </apex:outputText>
+                                        
+                                        <apex:outputText value="{0, number, 0.00}" rendered="{!if(orderProduct.needApproval == 'No', true, false)}" style="text-align:center;">
+                                            <apex:param value="{!orderProduct.salesOrderProducts.Quantity__c}" />
+                                        </apex:outputText>
+                                    </td>
+                                    
+                                    <td class="textAlignCenter" >
+                                        <apex:outputText value="{0, number, 0.00}"  rendered="{!if(orderProduct.needApproval == 'Yes', true, false)}" style="color:red;text-align:center;">
+                                            <apex:param value="{!orderProduct.salesOrderProducts.Quantity_2__c}" />
+                                        </apex:outputText>
+                                        
+                                        <apex:outputText value="{0, number, 0.00}" rendered="{!if(orderProduct.needApproval == 'No', true, false)}" style="text-align:center;">
+                                            <apex:param value="{!orderProduct.salesOrderProducts.Quantity_2__c}" />
+                                        </apex:outputText>
+                                    </td>
+                                     <td class="textAlignCenter" >
+                                        <apex:outputText value="{0, number, 0.00}"  rendered="{!if(orderProduct.needApproval == 'Yes', true, false)}" style="color:red;text-align:center;">
+                                            <apex:param value="{!orderProduct.salesOrderProducts.Quantity_3__c}" />
+                                        </apex:outputText>
+                                        
+                                        <apex:outputText value="{0, number, 0.00}" rendered="{!if(orderProduct.needApproval == 'No', true, false)}" style="text-align:center;">
+                                            <apex:param value="{!orderProduct.salesOrderProducts.Quantity_3__c}" />
+                                        </apex:outputText>
+                                    </td>
+                                    
+                                    <td class="textAlignCenter" >
+                                            <apex:outputText value="{!orderProduct.totalQuantity}"   rendered="{!if(orderProduct.needApproval == 'Yes', true, false)}" style="color:red;text-align:center;"/>
+                                            
+                                            <apex:outputText value="{!orderProduct.totalQuantity}"  rendered="{!if(orderProduct.needApproval == 'No', true, false)}" style="text-align:center;"/>
+                                    </td>
+                                    
+                                    <td class="textAlignCenter" >
+                                        <apex:outputText value="$ {!orderProduct.productPrice.Wholesaler_Price__c}"   rendered="{!if(orderProduct.needApproval == 'Yes', true, false)}" style="color:red;text-align:center;"/>
+                                        
+                                        <apex:outputText value="$ {!orderProduct.productPrice.Wholesaler_Price__c}"  rendered="{!if(orderProduct.needApproval == 'No', true, false)}" style="text-align:center;"/>
+                                    </td>
+                                    
+                                    <td class="textAlignCenter" >
+                                        <apex:outputText value="{!orderProduct.salesOrderProducts.Discount__c}" style="text-align:center;{!if(orderProduct.needApproval == 'Yes', 'color:red;', '')}"/> 
+                                    </td>
+                                    
+                                    <td class="textAlignCenter" >
+                                        <apex:outputText value="{!if(ISBLANK(orderProduct.salesOrderProducts.Discount__c),orderProduct.promotionDiscount,if(AND(NOT(ISBLANK(orderProduct.promotionDiscount)),orderProduct.promotionDiscount>orderProduct.salesOrderProducts.Discount__c),orderProduct.promotionDiscount,orderProduct.salesOrderProducts.Discount__c))}" style="text-align:center;{!if(orderProduct.needApproval == 'Yes', 'color:red;', '')}"/> 
+                                    </td>
+                                    
+                                    <td class="textAlignCenter" >
+                                        <apex:outputText value="$ {0, number, 0.00}"  rendered="{!if(orderProduct.needApproval == 'Yes', true, false)}" style="color:red;text-align:center;">
+                                            <apex:param value="{!orderProduct.productTotalAmount}" />
+                                        </apex:outputText>
+                                        
+                                        <apex:outputText value="$ {0, number, 0.00}" rendered="{!if(orderProduct.needApproval == 'No', true, false)}" style="text-align:center;">
+                                            <apex:param value="{!orderProduct.productTotalAmount}" />
+                                        </apex:outputText>
+                                    </td>
+                                    <td class="textAlignCenter" >
+                                        <apex:outputText value="{!orderProduct.needApproval}"  rendered="{!if(orderProduct.needApproval == 'Yes', true, false)}" style="color:red;text-align:center;">
+                                            <apex:param value="{!orderProduct.needApproval}" />
+                                        </apex:outputText>
+                                        <apex:outputText value="{!orderProduct.needApproval}"  rendered="{!if(orderProduct.needApproval == 'No', true, false)}" style="text-align:center;">
+                                            <apex:param value="{!orderProduct.needApproval}" />
+                                        </apex:outputText>
+                                    </td>
+                                </tr>
+                            </apex:repeat>
+                            <tr>
+                                <td style="text-align:right;" colspan="8">
+                                    <b>Grand Total:</b>&nbsp;&nbsp;&nbsp;&nbsp;
+                                </td>
+                                <td style="text-align:center;">
+                                    <b>
+                                        $&nbsp;<apex:outputText value="{!grandTotal}"/>
+                                    </b>
+                                </td>
+                                <td>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <apex:outputPanel rendered="{!approvalFlag}">
+                        <div style ="color:red;">Products that are highlighted in red have applied discount greater than Maximum allowed discount, this sales order will be sent for approval to the State Manager.</div>
+                    </apex:outputPanel>
+                    
+                </div>
+                <div id = "ErrorDiv"></div>
+            </apex:outputPanel>
+                
+            <!-- Stores total quantity for drop 1 and drop 2 to campare with sum of drop 1 section and sum of drop 2 section -->
+            <apex:inputHidden id="totalQuantityId1" value="{!totalQuantityDrop1}"/>
+            <apex:inputHidden id="totalQuantity2Id" value="{!totalQuantityDrop2}"/>
+            <apex:inputHidden id="totalQuantity3Id" value="{!totalQuantityDrop3}"/> 
+            <apex:inputHidden id="drop1DateValid" value="{!drop1DateValidOrNot}"/>
+        </apex:form>
+        <!-- Submit & cancel button to place a sales order -->   
+        <br/>     
+         <div style ="width:100%">
+        <button id="sbmt" style ="margin-left:40%; width:10%;">Submit</button>
+        <button id="cnsl" onclick="back()" style ="margin-left:5%; width:10%;">Cancel</button>
+    </div>
+    </apex:outputPanel>
+    
+    <!-- This output panel appears when ther is no wholesaler associated to an outlet and user is trying to create sales order -->
+    <apex:outputPanel rendered="{!wholesalerNotExist}">
+    <div style = "color:red;left:40%;top:40%;position:relative;"> Sorry, you can not place an order, there is no wholesaler associated with this outlet.</div>
+    </apex:outputPanel>
+</apex:page>

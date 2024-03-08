@@ -1,0 +1,7 @@
+<!-- 
+    @author : Gunwant Patidar
+    @description : this page displays all on going promotions for banner group accounts 
+ -->
+<apex:page sidebar="false" showHeader="false" readOnly="true">
+    
+</apex:page>

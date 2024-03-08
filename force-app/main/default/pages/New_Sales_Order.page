@@ -1,0 +1,540 @@
+<!--Created By-:Sourav Nema
+    Created Date-:4/10/2013-->
+
+<apex:page id="thepage" controller="NewSalesOrederController" showHeader="true" sidebar="false" docType="html-5.0">
+    <head><meta http-equiv="X-UA-Compatible" content="IE=edge" /></head>
+    <style>
+        /*set Close button icon*/
+        .ui-icon {
+            background-image: url({!$Resource.JQueryUIIconSet}) !important;
+            /*images/ui-icons_888888_256x240.png) !important;*/
+        }       
+        .confirm1 {
+            margin-right: 20px!important;
+        }       
+        .confirm2 {
+            margin-right: 400px !important;
+        }       
+        .confirmOk {
+            margin-right: 340px !important;
+        }       
+        .ui-dialog .ui-dialog-content {
+            background: rgb(173, 182, 212);
+        }       
+        .ui-dialog-titlebar {
+            background-color: rgb(0, 62, 126);
+            color: white;
+        }       
+        #headerTable tr:first-child td{     
+          text-align: center;
+          background-color: rgb(0, 62, 126);
+          color:white;
+        }       
+        #tb1 tr td{     
+         height:20 px !important;
+        }
+        .pbSubheader {
+        background-color: rgb(0, 62, 126) !important;
+        }
+    </style>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js" />
+    <apex:stylesheet value="{!$Resource.JQueryUICSS}" />
+    <script language="javascript" type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.2/jquery-ui.min.js"></script>
+    <apex:outputPanel rendered="{!hideRestItems}">
+    <apex:form id="form1" style="">
+        <apex:pageBlock tabStyle="Sales_Order__c" id="pblock1">
+            <apex:pageMessages id="message" />
+            <apex:pageBlockSection columns="2" title="Sales Order">    
+                <apex:selectList value="{!wAccount}" size="1"  id="wAccountId" styleclass="wAccountId" onchange="showWholesaler()" label="Wholesaler Branch Name">
+                    <apex:selectOptions value="{!items}"/>
+                </apex:selectList>
+                <apex:outputField value="{!salesRecord.Outlet_Name__c}"/>
+                <apex:inputField id="customerNumberId" value="{!salesRecord.Customer_PO_Number__c}" />
+                <apex:inputField id="dropDateId"  value="{!salesRecord.Drop_1_Date__c}" label="Order Delivery Date"/>                
+
+            </apex:pageBlockSection>            
+            <table style ="width:100%;text-align:center" id ="headerTable">
+                <tr height="25px" id ="row1">
+                    <td style ="width:8%"><b>Wholesaler Product Code</b></td>
+                    <td style ="width:19%"><b>Product Name</b></td>
+                    <td style ="width:6%"><b>Start Date</b></td>
+                     <td style ="width:6%"><b>End Date</b></td>
+                    <td style ="width:5%"><b>Units per case</b></td>
+                    <td style ="width:5%"><b>Price</b></td>
+                    <td style ="width:5%"><b>Maximum Discount</b></td>
+                    <td style ="width:5%"><b>Current Promo Disc</b></td>
+                    <td style ="width:8%"><b>Quantity Ordered</b></td>
+                    <td style ="width:8%"><b>Disc Given</b></td>
+                    <td style ="width:4%"><b>Total Disc Applied</b></td>
+                    <td style ="width:5%"><b>Total Amount</b></td>    
+                    <td style ="width:8%;color:#E6E600;font-style:italic;background-color:#A37547"><b>Bonus Quantity</b></td>
+                    <td style ="width:8%"><b>Comments</b></td>
+                </tr>
+            </table>
+            <div style="overflow-x: hidden; overflow-y: scroll; align: center; height: 450px; width: 101%">           
+                <table id="tb1" style="margin-top: 10 px;text-align:center" width="100%" >
+                    <apex:variable value="{!1}" var="rowNum" />
+                    <apex:repeat value="{!salesWrapper}" var="item">
+                        <tr>
+                            <td class="grpPrdctId" style ="width:8%"><apex:outputpanel id="panelId">{!item.wholeSalerGroupProduct} </apex:outputpanel> </td>                          
+                           <td class="prdctName" style ="width:19%;text-align:left;">{!item.prdct.name}</td>
+                           <td  style ="width:6%;text-align:center;">
+                              <apex:outputText value="{0,date,dd/MM/yy}">
+                                                   <apex:param value="{!item.startDate}" /> 
+                              </apex:outputText>
+                           </td>
+                           <td  style ="width:6%;text-align:center;">
+                              <apex:outputText value="{0,date,dd/MM/yy}"> <apex:param value="{!item.endDate}" /> 
+                              </apex:outputText>
+                           </td>
+                           <td style ="width:5%"> {!FLOOR(item.prdct.Bottles_Per_Carton__c)}</td>
+                           <td  class="pdata" style ="width:5%">$ {!item.price}</td>
+                           <td  class="includemaxDiscount" style ="width:5%">$ {!item.maxDiscount}</td>
+                           <td  class="promotionDiscount" style ="width:5%">$ {!item.promotionDiscount} </td> 
+                           <td style ="width:8%">
+                           <apex:inputField styleClass="includeQty" value="{!item.product.Quantity__c} "
+                                            onchange="getValue({!rowNum},this.value)"
+                                            style="width:60%;margin-left:0%" />
+                           </td>
+                           <td style ="width:8%"> 
+                             <apex:inputField value="{!item.product.Discount__c}"
+                                            onchange="calDiscGiven({!rowNum},this.value)"
+                                            style="width:60%;margin-left:0%"
+                                            styleClass="includeDiscount" />
+                           </td>                           
+                           <td  class="appldDisc" style ="width:4%"> </td>                           
+                           <td  class="includeTotal" style ="width:5%"></td>
+                           <td style ="width:8%"> 
+                            <apex:inputField value="{!item.product.Bonus_Product__c}"
+                                  style="width:60%;margin-left:0%" styleClass="bonusData" onchange="showError()"/>
+                           </td>
+                           <td style ="width:8%">
+                               <apex:inputField value="{!item.product.Comments__c}" style="width:60%;margin-left:0%"/>
+                           </td>
+                        </tr>
+                          <apex:variable var="rowNum" value="{!rowNum + 1}" />
+                    </apex:repeat>
+                </table>
+                <table align="left"  id ="sumTable" border ="1px" style="margin-left:89%; width:10%; visibility:hidden;" cellspacing="0px" >
+                    <tr><td></td></tr>
+                </table>
+            </div>
+        </apex:pageBlock>
+        <apex:actionFunction action="{!save}" name="doSave" oncomplete="destroyLoadingDialog();"/>
+        <apex:actionFunction action="{!showWholesalerGroup}" name="showWholesaler" reRender="panelId" oncomplete="parseProductTable();"/>
+        <apex:actionFunction action="{!validateDrop1Date}" name="validateDrop1Date" rerender="drop1DateValid" oncomplete="submitOrder();"/>
+        <div id="itemList" title="Sales Order Summary"></div>
+        <apex:inputHidden id="drop1DateValid" value="{!drop1DateValidOrNot}"/>
+    </apex:form>
+    <div id="loading-message" title="Processing..." style="height:175px;">
+        <img src="{!$Resource.AjaxAnimation}"/>
+    </div>
+    <input id="hiddenElement" type="hidden" />
+    <div style ="width:100%">
+        <button id="sbmt" style ="margin-left:40%; width:10%;" onclick="validateDrop1Date();">Submit</button>
+        <button id="cnsl" onclick="back()" style ="margin-left:5%; width:10%;">Cancel</button>
+    </div>    
+    </apex:outputPanel>    
+    <apex:outputPanel rendered="{!wholesalerNotExist}">
+    <div style = "color:red;left:40%;top:40%;position:relative;"> Sorry, you can not place an order, there is no wholesaler associated with this outlet.</div>
+    </apex:outputPanel>
+    <div id = "ErrorDiv"></div>
+    <script type="text/javascript"> 
+        window.onload = setFocus
+            function setFocus() {
+            document.getElementById("hiddenElement").focus();
+            
+            }
+        var tableRows;
+        var sumTable;
+        var ProductName = new Array();
+        var Quantity    = new Array();
+        var Size        = new Array();
+        var TotalAmount = new Array();   
+        var discount    = new Array();
+        var maxDiscount = new Array();   
+        var bonusPrd    =  new Array();
+        var appldDscnt  = new Array();
+        var priceVal = new Array();
+        $(window).load(function() {
+            var grandTotal = 0;
+            tableRows = document.getElementById("tb1").getElementsByTagName("tr");
+            sumTable  = document.getElementById("sumTable").getElementsByTagName("tr");
+            //colored table rows
+            colorTableRow("tb1",{!coloredRow}, {!greenColoredRow});
+            for(i=0;i<=tableRows.length-1;i++){ 
+                var quantity    =   tableRows[i].cells[8].childNodes[0].value;
+                var discount    =   tableRows[i].cells[9].childNodes[0].value;
+                var price       =   tableRows[i].cells[5].innerHTML.replace( /^\D+/g, '');
+                var pDiscount   =   tableRows [i].cells[7].innerHTML;
+                var maxDiscnt   =   tableRows[i].cells[6].innerHTML.replace( /^\D+/g, '');
+                var crrntDiscnt =   tableRows[i].cells[7].innerHTML.replace( /^\D+/g, '');
+                tableRows[i].cells[6].innerHTML    =    '$ '+Number(maxDiscnt).toFixed(2);          
+                tableRows[i].cells[7].innerHTML   =    '$ '+Number(crrntDiscnt).toFixed(2);           
+                tableRows[i].cells[5].innerHTML   =    '$ '+Number(price).toFixed(2);
+                //calculate total discount applied
+                if(Number(discount) >Number(pDiscount.replace( /^\D+/g, ''))){
+                    tableRows[i].cells[10].innerHTML  = '$ '+ Number(discount).toFixed(2);
+                } else{       
+                    tableRows[i].cells[10].innerHTML = '$ '+Number(pDiscount.replace( /^\D+/g, '')).toFixed(2);
+                }
+                var appldDiscnt =  tableRows[i].cells[10].innerHTML.replace( /^\D+/g, '').replace( /^\D+/g, '') ;
+                if(quantity!=0){
+                    tableRows[i].cells[11].innerHTML ='$ '+  Number(quantity*(Number(price)- Number(appldDiscnt))).toFixed(2);  
+                    grandTotal = grandTotal+ Number(quantity*(price -appldDiscnt));
+                }
+            }   
+            sumTable   = document.getElementById("sumTable").getElementsByTagName("tr");
+            sumTable[0].cells[0].innerHTML  =  '<b>Total Sum: $ '+grandTotal.toFixed(2) +'</b>'
+            parseProductTable();
+        });
+      
+        $(document).ready(function(){
+            $("#itemList").hide();
+            $("#loading-message").hide();
+        });    
+
+        function parseProductTable() {
+            var tableBody = $( "#tb1" ).children();
+            var tableRows = tableBody.children();
+            console.log('Total rows: ' + tableRows.length);
+            for(var i =0; i< tableRows.length; i++) {
+                var productCode = tableRows[i].cells[0].getElementsByTagName('span')[0].innerHTML;
+                if (Number(productCode) > 0) {
+                    console.log('Perfect');
+                    tableRows[i].style.display = "block";
+                } else {
+                    console.log('remove');
+                    tableRows[i].style.display = "none";
+                }
+                
+            }
+        }
+        
+        function openLoadingdialog(){
+            $("#loading-message").dialog({  
+                draggable:false,
+                resizable:false,
+                closeOnEscape: false,
+                open: function(event, ui) { $(".ui-dialog-titlebar-close").hide();$(".ui-dialog-titlebar").hide();},
+                modal: true,
+                width:200,
+                minHeight: 0                                                                                                                           
+            });        
+        }        
+        function destroyLoadingDialog(){
+            $("#loading-message").dialog("close" );
+        }
+        function submitOrder(){
+            
+            console.log('selected date is '+ document.getElementById("{!$Component.form1.drop1DateValid}").value); 
+            console.log('##wAccountId '+ document.getElementsByClassName('wAccountId')[0].value);
+            
+            var wAccountValue = document.getElementsByClassName('wAccountId')[0].value;
+            var wAccount = wAccountValue.substring(0, wAccountValue.indexOf(":"));
+            console.log('##wAccount' + wAccount); 
+ 
+            if(document.getElementById("{!$Component.form1.drop1DateValid}").value === "No")
+                displayError('Drop 1 Date should be after 2 days of today');  
+            else {
+                iterateTable();
+                var flage = isValidate(); 
+                var div=$("#itemList");
+                div.html('');
+                var showError =0;
+                var boxTable = '<table border ="1px" cellspacing = "0px" width ="100%" id ="popUpTable">'+
+                               '<tr style ="font-family:Arial;font-weight:600;background-color: rgb(0, 62, 126);"><td style="color: white;">Product Name</td>'+
+                               '<td style="color: white;">Quantity</td><td style="color: white;">Bonus Quantity</td>'+
+                               '<td style="color: white;">Price</td><td style="color: white;">Applied Discount</td><td style="color: white;">Price After Discount</td><td style="color: white;">Total Amount</td>'+
+                               '<td style="color: white;">Need Approval</td></tr>';
+                var ttlamnt =0;
+                var ttlQuant =0;
+                for(i=0;i<counter;i++){
+                    boxTable =boxTable +'<tr style ="color: #333333;font-family: Arial;font-size:13px;">';
+                    boxTable =boxTable +'<td>'+ProductName[i]+'</td>';
+                    boxTable =boxTable +'<td>'+Number(Quantity[i]).toFixed(2)+'</td>'; 
+                    boxTable =boxTable +'<td>'+Number(bonusPrd[i]).toFixed(2)+'</td>';
+                    boxTable =boxTable +'<td>'+priceVal[i]+'</td>';
+                    boxTable =boxTable +'<td>'+appldDscnt[i]+'</td>';
+                    boxTable =boxTable +'<td>$ '+(Number(priceVal[i].replace( /^\D+/g, '')) - Number(appldDscnt[i].replace( /^\D+/g, '')))+'</td>';
+                    if(Number(appldDscnt[i].replace( /^\D+/g, ''))>Number(maxDiscount[i].replace( /^\D+/g, '')) || bonusPrd[i]!=""){
+                            showError =1;
+                        if(Quantity[i]!='' ){
+                            ttlamnt = ttlamnt+Number(TotalAmount[i].replace( /^\D+/g, ''));
+                            ttlQuant = ttlQuant + Number(Quantity[i].replace( /^\D+/g, ''));
+                            boxTable =boxTable +'<td>'+TotalAmount[i]+'</td><td>Yes</td></tr>'; 
+                        } else{
+                            boxTable =boxTable +'<td>$ 0</td><td>No</td></tr>'; 
+                        }
+                    } else{
+                        if (Quantity[i]==''){
+                            boxTable =boxTable +'<td>$ 0</td><td>No</td></tr>'; 
+                        } else if(Quantity[i]!=0 || Quantity[i]!=null){
+                            ttlamnt = ttlamnt+Number(TotalAmount[i].replace( /^\D+/g, ''));
+                            ttlQuant = ttlQuant + Number(Quantity[i].replace( /^\D+/g, ''));
+                            boxTable =boxTable +'<td>'+TotalAmount[i]+'</td><td>No</td></tr>'; 
+                        } else{
+                            boxTable ="0";
+                        }
+                    }
+                }
+                boxTable = boxTable +'<tr style ="color: #333333;font-family: Arial;font-weight:600;font-size:13px;"><td colspan ="1"><b style ="margin-left:70%">Grand Total</b></td> <td>'+ttlQuant.toFixed(2) +'</td> <td colspan="4"></td> <td>$ '+ttlamnt.toFixed(2) +'</td><td></td></table>';
+                if(showError ==1){
+                    boxTable = boxTable +'<p style ="font-family:Arial;font-size:13px;color:red">Products that are highlighted in red have applied discount greater than Maximum allowed discount,'+
+                        ' this sales order will be sent for approval to the State Manager.</p>';
+                }
+                div.html(boxTable); 
+                if(flage =='nodisc' || flage =='nobns' || flage =='noQntt' || wAccount.length<1 ||(Quantity.length<1 && bonusPrd.length<1)){
+                    if(wAccount.length<1){
+                        div.html('<p style ="font-family:Arial;font-weight:600;font-size:15px;color:red">Please select Wholesaler Branch Name.</p>');
+                    } else if(Quantity.length<1 && bonusPrd.length<1){
+                        div.html('<p style ="font-family:Arial;font-weight:600;font-size:15px;color:red">Please select Quantity or Bonus Quantity for at least one Product.</p>');
+                    } else if(flage =='nodisc'){
+                        div.html('<p style ="font-family:Arial;font-weight:600;font-size:15px;color:red">Product discount cannot be negative or zero.</p>');
+                    } else if(flage =='nobns'){
+                        div.html('<p style ="font-family:Arial;font-weight:600;font-size:15px;color:red">Bonus Quantity cannot be negative or zero.</p>');
+                    } else {
+                        div.html('<p style ="font-family:Arial;font-weight:600;font-size:15px;color:red">Product Quantity cannot be negative or zero.</p>');
+                    }
+                    $("#itemList").dialog({  
+                        modal:true,         
+                        width:750,
+                        height:420,
+                        class:'dilog', 
+                        close: function( event, ui ) { },
+                        buttons: [{
+                                text: "OK",
+                                class:'confirmOk',
+                                click: function () {
+                                  $(this).dialog('close');
+                                },
+                            }]});      
+                } else{ 
+                    $("#itemList").dialog({
+                        modal:true,       
+                        width:1000,
+                        height:420,
+                        class:'dilog', 
+                        close: function( event, ui ) { },
+                        buttons: [{
+                            text: "Order Now",
+                            class:'confirm1',
+                            click: function () {
+                                doSave();
+                                openLoadingdialog();
+                                $(this).dialog('close');
+                            },
+                        },{
+                            text: "Cancel",
+                            class:'confirm2',
+                            click: function () {                                  
+                               $(this).dialog('close');
+                        }, }]});       
+                }
+                doRed("popUpTable");
+            } 
+        }
+ 
+        function displayError(msg){
+            var div=$("#ErrorDiv");
+            div.html('');
+            div.html('<p style ="font-family:Times New Roman, Times, serif;font-weight:600;font-size:15px;color:red">'+msg+'</p>');
+            $("#ErrorDiv").dialog({
+                                    modal:true,       
+                                    width:750,
+                                    height:420,
+                                    class:'dilog',                              
+                                    close: function( event, ui ) {  },
+                                    buttons: [{
+                                                text: "OK",
+                                                class:'confirm1',
+                                                click: function () {
+                                                  $(this).dialog('close');
+                                                },
+                                            }]});   
+        }
+        function iterateTable(){
+            var tempProductName      = new Array();
+            var tempQuantity         = new Array();
+            var tempSize             = new Array();
+            var tempTotalAmount      = new Array();  
+            var tempdiscount         = new Array();
+            var tempmaxDiscount      = new Array();    
+            var tempbonusPrd         = new Array();
+            var tempappliedDiscnt   = new Array();
+            var tempPriceVal         = new Array();
+            counter =0;
+            $(".includeQty").each(function(index){
+                if($(this).is("input"))
+                    tempQuantity.push($(this).val());
+            });
+            $(".appldDisc").each(function(index){       
+                tempappliedDiscnt.push($(this).html());
+            });
+            $(".prdctName").each(function(index){       
+                tempProductName.push($(this).html());
+            });
+            $(".includeItemSize").each(function(index){       
+                tempSize.push($(this).html());
+            });
+            $(".includeTotal").each(function(index){      
+                tempTotalAmount.push($(this).html());
+            });
+            $(".includemaxDiscount").each(function(index){      
+                tempmaxDiscount.push($(this).html());
+            });     
+            $(".includeDiscount").each(function(index){      
+                tempdiscount.push($(this).val());
+            });     
+            $(".bonusData").each(function(index){       
+                tempbonusPrd.push($(this).val());
+            });     
+            $(".pdata").each(function(index){       
+                tempPriceVal.push($(this).html());
+            });
+            ProductName      = new Array();
+            Quantity         =  new Array();
+            Size             =  new Array();
+            TotalAmount      =  new Array();
+            maxDiscount      = new Array();
+            discount         = new Array();
+            bonusPrd         = new Array();
+            appldDscnt       = new Array();
+            priceVal         = new Array();
+            for(i=0;i<tempQuantity.length;i++){
+                if((tempQuantity[i]!=0 &&tempQuantity[i]!="" )|| (tempbonusPrd[i]!=0 && tempbonusPrd[i]!="")){
+                    Quantity[counter]        = tempQuantity[i];
+                    ProductName[counter]     = tempProductName[i];
+                    Size[counter]            = tempSize[i]; 
+                    TotalAmount[counter]     = tempTotalAmount[i];  
+                    maxDiscount[counter]     = tempmaxDiscount[i]
+                    discount[counter]        = tempdiscount[i];
+                    bonusPrd[counter]        = tempbonusPrd[i];
+                    appldDscnt[counter]      = tempappliedDiscnt [i];
+                    priceVal[counter]        =  tempPriceVal[i];
+                    counter++; 
+                }
+            }
+        }
+        function back(){
+            window.location.replace('/{!acId}');
+        }
+        function calDiscGiven(y,x){      
+            var quantity   =   tableRows[y-1].cells[8].childNodes[0].value;
+            var discount   =   tableRows[y-1].cells[9].childNodes[0].value;
+            var price   =   tableRows[y-1].cells[5].innerHTML;
+            var pDiscount   =   tableRows [y-1].cells[7].innerHTML;
+            if(Number(x) >Number(pDiscount.replace( /^\D+/g, ''))){
+                tableRows[y-1].cells[10].innerHTML  = '$ '+ Number(x).toFixed(2);;
+            } else{
+                tableRows[y-1].cells[10].innerHTML = '$ '+Number(pDiscount.replace( /^\D+/g, '')).toFixed(2);;
+            }
+            var appldDiscnt =  tableRows[y-1].cells[10].innerHTML
+            tableRows[y-1].cells[11].innerHTML ='$ '+  Number(quantity*(Number(price.replace( /^\D+/g, ''))- Number(appldDiscnt.replace( /^\D+/g, '')))).toFixed(2);
+            createTotalSum(sumTable);
+            showError();
+        }
+        function getValue(y,x) {
+            var sum = 0;    
+            var quantity  =   tableRows[y-1].cells[8].childNodes[0].value;
+            var discount   =   tableRows[y-1].cells[9].childNodes[0].value;
+            var price   =   tableRows[y-1].cells[5].innerHTML;
+            var pDiscount   =   tableRows [y-1].cells[7].innerHTML;
+            var appldDiscnt  =   tableRows[y-1].cells[10].innerHTML
+            var count;
+            tableRows[y-1].cells[11].innerHTML ='$ '+  Number(quantity*(Number(price.replace( /^\D+/g, ''))- Number(appldDiscnt.replace( /^\D+/g, '')))).toFixed(2);
+            createTotalSum(sumTable);
+            showError();
+        } 
+        function createTotalSum(sumTable){
+            var    sum =0;
+            for(i=0;i<=tableRows.length-2;i++){
+                sum = sum + Number( tableRows[i].cells[12].innerHTML.replace( /^\D+/g, ''))
+            }
+            totalSum = sum;
+            sumTable[0].cells[0].innerHTML          =  '<b>Total Sum: $ '+sum +'</b>'  
+        }
+        function isValidate(){
+            flage = 'yes';
+            for(i=0;i<=tableRows.length-1;i++){
+                var discnt  = tableRows[i].cells[9].childNodes[0].value
+                var Quantity  =   tableRows[i].cells[8].childNodes[0].value
+                var bonusQuantity  =   tableRows[i].cells[12].childNodes[0].value
+                if(discnt<=0 && discnt!=''){
+                    flage = 'nodisc';
+                    tableRows[i].cells[9].childNodes[0].value ='';
+                } else if(Quantity<=0 && Quantity !=''){
+                    flage = 'noQntt';
+                    tableRows[i].cells[8].childNodes[0].value ='';
+                    tableRows[i].cells[11].innerHTML ='';
+                } else if(bonusQuantity<=0 && bonusQuantity !=''){
+                    flage = 'nobns';
+                    tableRows[i].cells[12].childNodes[0].value ='';
+                } else if(isNaN(Quantity)){
+                    flage = 'noSpscChar';
+                    tableRows[i].cells[8].childNodes[0].value ='';
+                    tableRows[i].cells[11].innerHTML ='';
+                } else if(isNaN(discnt)){
+                    flage = 'noSpscChar';
+                    tableRows[i].cells[9].childNodes[0].value ='';
+                } else if(isNaN(bonusQuantity)){
+                    flage = 'noSpscChar';
+                    tableRows[i].cells[12].childNodes[0].value ='';
+                }
+            }
+            return flage;
+        }
+        function doRed(tableName){
+            var rows  = document.getElementById(tableName).getElementsByTagName("tr");
+            for(i=0;i<=rows.length-1;i++){
+                if(rows[i].cells[rows[i].cells.length-1].innerHTML == 'Yes'){
+                    for(j=0;j<=rows[i].cells.length-1;j++){
+                        rows[i].cells[j].style.color ='red';
+                    }
+                }
+            }
+        }
+        function colorTableRow(tableName,numberOfRow, greenColoredRow){  
+            var rows  = document.getElementById(tableName).getElementsByTagName("tr");
+            for(i=0;i<=numberOfRow-1;i++){  
+                var rowColor = 'red';
+                if (i < greenColoredRow)
+                    rowColor = 'green';
+                for(j=0;j<=rows[i].cells.length-1;j++){                     
+                    rows[i].cells[j].style.color = rowColor;
+                    rows[i].cells[j].style.fontWeight ='500';
+                }
+            }
+        }
+        function showError(){
+            var flage = isValidate();
+            var div=$("#itemList");
+            div.html('');
+            var showError =0;
+            if(flage =='nodisc' || flage =='nobns' || flage =='noQntt' || flage =='noSpscChar'){
+                if(flage =='nodisc'){
+                    div.html('<p style ="font-family:Arial;font-weight:600;font-size:15px;color:red">Product discount cannot be negative or zero.</p>');
+                } else if(flage =='nobns'){
+                    div.html('<p style ="font-family:Arial;font-weight:600;font-size:15px;color:red">Bonus Quantity cannot be negative or zero.</p>');
+                } else  if(flage =='noQntt'){
+                    div.html('<p style ="font-family:Arial;font-weight:600;font-size:15px;color:red">Product Quantity cannot be negative or zero.</p>');
+                } else if(flage =='noSpscChar'){
+                    div.html('<p style ="font-family:Arial;font-weight:600;font-size:15px;color:red">Input should not contain any special character.</p>');
+                }
+                $("#itemList").dialog({
+                    modal:true,       
+                    width:750,
+                    height:420, 
+                    class:'dilog', 
+                    close: function( event, ui ) { },
+                    buttons: [{
+                                text: "OK",
+                                class:'confirmOk',
+                                click: function () {
+                                  $(this).dialog('close');
+                                },
+                            }]});
+                }
+        }   
+   </script>
+</apex:page>

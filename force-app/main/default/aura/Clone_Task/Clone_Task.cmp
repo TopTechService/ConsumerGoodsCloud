@@ -1,0 +1,45 @@
+<aura:component controller="CloneTask_Controller" access="global" implements="force:lightningQuickAction,force:hasRecordId" >
+	<aura:attribute name="recordId" type="String" />
+    <aura:attribute name="id" type="String" default="" access="GLOBAL"/>
+    <aura:attribute name="selectedLookUpRecord" type="sObject" default="{}"/>
+    
+    <!--<aura:handler name="init" value="{!this}" action="{!c.doInit}" />-->
+    <aura:handler name="onSaveSuccess" event="force:recordSaveSuccess" action="{!c.save}"/> 
+
+    <aura:dependency resource="markup://force:navigateToSObject" type="EVENT"/>
+    
+    <div class="well">
+		
+        <div class="panel panel-primary">
+            <div class="panel-heading"></div>
+            <div class="panel-body">
+               
+                            
+                         <!--   <l_lookup:Lookup aura:id="uniqueLookupId"
+                 				objectType="Account" 
+                 				label="Choose a Customer"
+                 				pluralLabel="Customers"
+                 				selectedRecordId="{!v.id}"
+                                additionalField="BillingCity"
+                                isRequired="true"
+                                queryCondition="Called_On__c = true"/>-->
+                
+                <!-- additionalField="BillingCity" - not fully dynamic. 
+					Need to update in the CustomLookupResult coponent if modified. -->
+                <c:customLookup objectAPIName="account" 
+                                IconName="standard:account" 
+                                selectedRecord="{!v.selectedLookUpRecord}" 
+                                additionalField="BillingCity"
+                                label="Account Name"
+                                />
+						<!-- queryCondition="Called_On__c = true" -->
+                   
+            </div>
+            <br/>
+            <label class="col-sm-2 control-label"></label>
+    	<lightning:button variant="brand" label="Validate Clone" iconName="utility:back" iconPosition="left" onclick="{! c.doClone }" />
+        </div>
+    </div>
+   
+    
+</aura:component>

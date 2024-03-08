@@ -1,0 +1,175 @@
+<template>
+  <div class="container">
+    <div class="slds-card bottom">
+      <div class="slds-card__header slds-grid">
+          <h2 class="slds-card__header-title slds-page-header__title slds-truncate">Edit Objective Statistics!</h2>
+         
+      </div>
+      <br/>
+    </div>
+    
+    
+    <template if:true={records}>
+      <div class="slds-scrollable" >  
+        <table class="slds-table slds-table_bordered slds-table--header-fixed slds-table_cell-buffer">  
+          <thead class="slds-table--header-fixed "> 
+            <tr class="slds-text-title_caps header-row">
+              <th></th>
+              <template for:each={uniqueColumns} for:item="column"> 
+                <th key={column} class="slds-cell-wrap title-container">
+                  <div class="slds-truncate">{column}</div>
+                </th>
+              </template>
+            </tr>
+          </thead>
+       
+          <tbody>
+            <template for:each={records} for:item="record">
+              <tr class={record.rowclass}  key={record}>
+                <th>{record.username}<br/>
+                  {record.usermanager} {record.userregion}
+                </th>
+                <template for:each={record.statistics} for:item="row">
+                  <td key={row.Id}>
+                    <lightning-input key={row.Id} data-id={row.Id} data-reporting={record.Name} data-region={record.userregion} type="text" value={row.Total_Allocation__c} onchange={handleChange}></lightning-input>
+                  </td>
+                </template>
+              </tr>
+            </template>
+              
+            <!-- Summary Section-->
+            <tr>
+              <td class="center-aligned slds-text-title_caps bold-text" style="height:30px" colspan={numColumns}>Summary</td>
+            </tr>
+            <th> NSW/ACT </th>
+              <template for:each={uniqueColumns} for:item="column">
+                <th key={column}><div class="slds-truncate center-aligned" data-region="NSWACT" data-name={column}>{column}</div></th>
+              </template>
+            <tr>
+              <th>QLD</th>
+              <template for:each={uniqueColumns} for:item="column">
+                <th key={column}><div class="slds-truncate center-aligned" data-region="QLD" data-name={column}>{column}</div></th>
+              </template>
+            </tr>
+            <tr>
+              <th>VIC/TAS</th>
+              <template for:each={uniqueColumns} for:item="column">
+                <th key={column}><div class="slds-truncate center-aligned" data-region="VICTAS" data-name={column}>{column}</div></th>
+              </template>
+            </tr>
+            <tr>
+              <th>WA/SA/NT</th>
+              <template for:each={uniqueColumns} for:item="column">
+                <th key={column}><div class="slds-truncate center-aligned" data-region="WASANT" data-name={column}>{column}</div></th>
+              </template>
+            </tr>
+          </tbody>
+        </table>
+        <div class="slds-card">
+        <footer class="slds-card__footer">
+          <lightning-button variant="brand" label="Save" title="Save" onclick={handleSave} class="slds-m-bottom_x-small"></lightning-button>
+        </footer>
+      </div>
+       <!--  <div class="button-container">   
+          <lightning-button variant="brand" label="Save" title="Save" onclick={handleSave} class="slds-m-bottom_x-small"></lightning-button>
+        </div> -->
+      </div>
+    </template>
+  </div>
+</template>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+         <!--<template if:true={records}>
+                <table>
+                    <template for:each={uniqueRows} for:item="rowValue">
+                    <tr key={rowValue}>
+                        <th>{rowValue}</th>
+                        <template for:each={uniqueColumns} for:item="columnValue">
+                        <td key={columnValue} data-rowvalue={rowValue} data-columnvalue={columnValue}> 
+                            <b>{columnValue} </b>
+                            
+                            <template for:each={records} for:item="record">
+                                <lightning-input key={record} type="text" value={record.Total_Allocation__c} onchange={handleChange}></lightning-input>
+                                 <template >
+                                    <lightning-input key={record} type="text" value={record.Total_Allocation__c} onchange={handleChange}></lightning-input>
+                                </template> 
+                          </template>
+                        </td>
+                        </template>
+                    </tr>
+                    </template>
+                </table>
+            </template> -->
+
+
+       <!-- <template if:true={records}>
+          <table>
+              <thead>
+              <tr>
+                  <th></th>
+                  <template for:each={uniqueColumns} for:item="columnValue">
+                  <th key={columnValue}>{columnValue}</th>
+                  </template>
+              </tr>
+              </thead>
+              <tbody>
+                  <template for:each={uniqueRows} for:item="rowValue">
+                  <tr key={rowValue}>
+                      <th>{rowValue}</th>
+                      <template for:each={uniqueColumns} for:item="columnValue">
+                      <td key={columnValue}>
+                          <template for:each={records} for:item="record">
+                              <lightning-input key={record} type="text" value={record.target} onchange={handleChange}></lightning-input>
+                          </template>
+                      </td>
+                      </template>
+                  </tr>
+                  </template>
+              </tbody> 
+              
+          </table>
+      </template> -->
+
+           
+           
+            
+
+
+
+
+                <!-- <table>
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <template for:each={uniqueColumns} for:item="columnValue">
+                        <th key={columnValue}>{columnValue}</th>
+                      </template>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <template for:each={uniqueRows} for:item="rowValue">
+                      <tr key={rowValue}>
+                        <th>{rowValue}</th>
+                        <template for:each={uniqueColumns} for:item="columnValue">
+                          <td key={columnValue}>
+                            <template for:each={records} for:item="record">
+                             
+                            </template>
+                          </td>
+                        </template>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table> -->

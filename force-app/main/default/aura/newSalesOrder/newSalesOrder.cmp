@@ -1,0 +1,21 @@
+<!--
+ - Created by eugene on 03.10.19.
+ -->
+
+<aura:component description="newSalesOrder" implements="force:hasRecordId,force:lightningQuickActionWithoutHeader" controller="newSalesOrderEventPage">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:attribute name="recordTypes" type="List"/>
+    <aura:attribute name="selectedRecordTypeId" type="String"/>
+    <aura:attribute name="disabledBtn" type="Boolean" default="true"/>
+    <div style="height: 76px">
+    <lightning:select aura:id="selectType" name="select1" label="Select a record type" required="true" onchange="{!c.changeRecordType}">
+        <option value="-1">--None--</option>
+        <aura:iteration items="{!v.recordTypes}" var="type">
+            <option value="{!type.Id}">{!type.Name}</option>
+        </aura:iteration>
+    </lightning:select>
+    </div>
+    <div style="position: relative; left: 490px;">
+    <lightning:button label="Next" title="Next" onclick="{! c.createSalesOrder }" disabled="{!v.disabledBtn}"/>
+    </div>
+</aura:component>

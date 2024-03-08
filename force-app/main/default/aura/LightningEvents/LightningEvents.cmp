@@ -1,0 +1,82 @@
+<aura:component description="LightningEvents" implements="flexipage:availableForAllPageTypes" access="global" controller="LightningEventsController">
+    
+    <aura:attribute name="showSpinner" type="Boolean" default="true" access="private"/>
+    <aura:attribute name="eventsCountData" type="Object" access="private"/>
+    <aura:attribute name="events" type="Object" access="private"/>
+    <aura:attribute name="periodLabel" type="String" default="Today" access="private"/>
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <article class="slds-card">
+        <aura:if isTrue="{!v.showSpinner}">
+            <lightning:spinner variant="brand"/>
+        </aura:if>
+        <div class="slds-card__header slds-grid">
+            <header class="slds-media slds-media_center slds-has-flexi-truncate">
+                <div class="slds-media__figure">
+                    <span class="slds-icon_container slds-icon-standard-account" title="events">
+                        <lightning:icon iconName="standard:event"/>
+                        <span class="slds-assistive-text">events</span>
+                    </span>
+                </div>
+                <div class="slds-media__body">
+                    <h2 class="slds-card__header-title">
+                        <span>Events ({!v.periodLabel})</span>
+                    </h2>
+                </div>
+                <div class="slds-grid">
+                    <div class="slds-m-right--small slds-grid slds-grid_vertical-align-center" onclick="{!c.todayButtonClickHandler}">
+                        <lightning:buttonIcon iconName="utility:pop_in" variant="bare" alternativeText="Today" size="large"/>
+                        <div class="slds-text-heading_small">{!v.eventsCountData.today}</div>
+                    </div>
+                    <div class="slds-m-right--small slds-grid slds-grid_vertical-align-center" onclick="{!c.tomorrowButtonClickHandler}">
+                        <lightning:buttonIcon iconName="utility:dayview" variant="bare" alternativeText="Tomorrow" size="large" />
+                        <div class="slds-text-heading_small">{!v.eventsCountData.tomorrow}</div>
+                    </div>
+                    <div class="slds-m-right--small slds-grid slds-grid_vertical-align-center" onclick="{!c.weekButtonClickHandler}">
+                        <lightning:buttonIcon iconName="utility:weeklyview" variant="bare" alternativeText="Next 7 Days" size="large" />
+                        <div class="slds-text-heading_small">{!v.eventsCountData.week}</div>
+                    </div>
+                    <div class="slds-grid slds-grid_vertical-align-center" onclick="{!c.monthButtonClickHandler}">
+                        <lightning:buttonIcon iconName="utility:monthlyview" variant="bare" alternativeText="This Month" size="large" />
+                        <div class="slds-text-heading_small">{!v.eventsCountData.month}</div>
+                    </div>
+                </div>
+            </header>
+        </div>
+        <div class="slds-card__body slds-card__body_inner items-container">
+            <aura:iteration items="{!v.events}" var="event">
+                <div class="event-item">
+                    <tr>
+                        <td style="padding-right: 20px">
+                            <lightning:formattedDateTime value="{!event.StartDateTime}" year="numeric" month="numeric" day="numeric" /><br/>
+                            <b class="slds-p-right--x-small"><lightning:formattedDateTime value="{!event.StartDateTime}"  hour="2-digit" minute="2-digit" hour12="true"/></b>
+                        </td>
+                        
+                        <td>
+                            <div>
+                                <a href="#" data-id="{!event.Id}" onclick="{!c.navigateTo}">{!event.Subject}</a>
+                            </div>
+                            <div>
+                                <a href="#" data-id="{!event.What.Id}" onclick="{!c.navigateTo}">{!event.What.Name}</a>
+                            </div>
+                            <div>
+                                Status: <b class="slds-p-left--x-small slds-p-right--x-small">{!event.Status__c}</b>
+                            </div>
+                            <div>
+                                Finish:
+                                <lightning:formattedDateTime value="{!event.EndDateTime}" hour="2-digit" minute="2-digit" hour12="true"/>
+                            </div> 
+                        </td>
+                    </tr>
+                </div>
+            </aura:iteration>
+            <aura:if isTrue="{!v.events.length == 0}">
+                <div class="slds-align_absolute-center slds-m-top--small slds-m-bottom--small slds-text-color--weak">
+                    No events found
+                </div>
+            </aura:if>
+        </div>
+    </article>
+    
+</aura:component>

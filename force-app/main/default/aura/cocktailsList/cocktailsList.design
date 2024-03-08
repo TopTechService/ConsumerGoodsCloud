@@ -1,0 +1,7 @@
+<design:component>
+    <design:attribute name="recordId" label="Record Id" />
+    <design:attribute name="files" label="Files" />   
+   	<design:attribute name="GoToScreen" Label="Go To Screen"/>
+    <design:attribute name="selectedRecord" Label="Selected Record"/>
+    
+</design:component>

@@ -1,0 +1,16 @@
+<!--
+ - Created by eugene on 18.09.19.
+ -->
+
+<aura:component description="SurveyAnswersFlowContainer" controller="SurveyAnserwsFlowController" implements="force:appHostable,flexipage:availableForAllPageTypes,force:hasRecordId,flexipage:availableForRecordHome,force:lightningQuickAction" access="global">
+    <aura:attribute name="surveyAnswers" type="List"/>
+    <aura:attribute name="footer" type="String"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <lightning:card variant="Narrow" title="Survey" iconName="utility:questions_and_answers" footer="{!v.footer}">
+        <p class="slds-p-horizontal_small">
+            <aura:iteration items="{!v.surveyAnswers}" var="survey">
+                <c:SurveyAnswersFlow question="{!survey}"/>
+            </aura:iteration>
+        </p>
+    </lightning:card>
+</aura:component>

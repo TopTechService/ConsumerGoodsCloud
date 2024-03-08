@@ -1,0 +1,622 @@
+<!-- 
+    @author : Gunwant Patidar
+    @description : this page displays all on going promotions for banner group accounts 
+ -->
+<apex:page controller="ActivationPlanReportHandler" sidebar="false" showHeader="false" readOnly="true">
+    <apex:includeScript value="{!URLFOR($Resource.jquery, '/jquery/js/jquery.min.2.0.0.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jquery, '/jquery/js/jquery-ui-1.10.2.custom.min.js')}"/>
+    <style>
+        .LoadingDiv{
+            text-align: center;
+            font-size:20px;
+            margin-left: 0%;
+        }
+        #contentLoading{
+            display:none;
+            background-color:white;
+            height:200px;
+        }
+        #yearDiv{
+        	position: relative;
+			left: 9%;
+        }
+        
+        #promotionTable{
+            text-align:center;
+        }
+        .monthname{
+            background-color:#FFCC99;
+            font-weight:Bold;
+        }
+        .MonthLabel{
+            font-weight:Bold;
+            background-color:#B0B0B0;
+            color:white;
+        }
+        .promotion{
+            border:1px solid #000000; 
+            width = 100% ;
+            cellspacing =0 ;
+            cellpadding =0 ;
+        }
+        .activationplan{
+            font-size: 30px;
+            align:center;
+        }
+        .quarter{
+            font-weight:bold;
+        }
+        .quarterBgColor{
+            background-color:#FFFF99;
+            font-weight:Bold;
+            
+        }
+        .callCycleBgColor{
+        background-color:#FFFF99;
+        font-weight:Bold
+        }
+        .callCycle{
+        font-weight:Bold;
+        }
+        .BannerGroup{
+            background-color:#FFCC99;
+            font-weight:Bold;
+            font-size:10px;
+        }
+        
+        .Account{
+            color:black;
+            font-size:10px;
+        }
+        .Brand{
+            color:white;
+        }
+        #AccountLimit{
+            color:red;
+            font-size:20px;
+            margin-left: 20%;
+            
+        }
+        #contentLoaded{
+            
+        
+        }
+        #outerDiv{
+            width = "100%";
+            position: relative;
+            top: 20px;
+           
+        }
+        #tableGrid{
+            //position: fixed;
+            //left: 10%;
+            //bottom: 100px;
+        }
+    </style>
+    <script type="text/javascript" language="javascript">
+        
+        $j = jQuery.noConflict();
+        function renderPromotion(x, y, numCells, innerText, bgColor, tableId){
+            var row = document.getElementById(tableId).rows[y];
+            
+            var startCell = row.cells[x];
+            var rect = startCell.getBoundingClientRect();
+            startCell.setAttribute('colspan', numCells);
+            //startCell.innerHTML = '<div>' + innerText + '</div>';
+            
+            // delete cells: number of colspan cells to be deleted
+            var cellsTOBeDeleted;
+            for(var i=1; i<numCells; i++){
+                cellsTOBeDeleted = x;
+                cellsTOBeDeleted = cellsTOBeDeleted+1;
+                if(row.cells[cellsTOBeDeleted] != 'undefined'){
+                    row.deleteCell(cellsTOBeDeleted);
+                }
+            }
+            startCell.style.backgroundColor = bgColor;
+            startCell.style.color = 'White';
+        }
+        
+        //$j(document).ready(positionOverlay);
+     
+        // set random color for each row
+        function genColor() {
+        // take 3 random values, presumably this will be similar to MD5 bytes
+            var r = Math.floor(Math.random() * 255);
+            var g = Math.floor(Math.random() * 255);
+            var b = Math.floor(Math.random() * 255);
+             
+            // floor again
+            r = Math.floor(r);
+            g = Math.floor(g);
+            b = Math.floor(b);
+             
+            if (r < 50 && g < 50 && b < 50) r += 50;
+             
+            if (r > 150 && g > 150 && b > 150) r -= 100;
+             
+            if (Math.abs(r - g) < 50 && Math.abs(r - b) < 50 && Math.abs(g - b) < 50) {
+                if (r > 50) r -= 50;
+                if (g > 50) g -= 50;
+                if (b < 200) b += 50;
+            }
+             
+            var rstr = r.toString(16);
+            var gstr = g.toString(16);
+            var bstr = b.toString(16);
+            
+            // pad 0's -- probably a better way, but this was easy enough.
+            if (rstr.length === 1) {
+                rstr = "0" + rstr;
+            }
+            if (gstr.length === 1) {
+                gstr = "0" + gstr;
+            }
+            if (bstr.length === 1) {
+                bstr = "0" + bstr;
+            }
+             
+            return rstr + gstr + bstr;
+        }
+        
+        function tableToExcelChromeFirefox(promotionTable, Promotions, selectedYr, selectedBannerGrp, selectedState, createHyperlink){
+		    'use strict';
+		    var table, html, a;
+		    table = document.getElementById(promotionTable);
+		    html = '<h1>Activation Plan</h1><table style="background-color: rgb(173,182,212)"><tr><td colspan="3"><b>Promotion Year: </b>' + getSelectedText(selectedYr) + '</td></tr><tr><td colspan="3"><b>Banner Group Account: </b>' + getSelectedTextMultiple(selectedBannerGrp) + '</td></tr><tr><td colspan="3"><b>State: </b>' + getSelectedTextMultiple(selectedState) + '</td></tr></table><br/><br/>' + table.outerHTML;
+		    
+		    while (html.indexOf('á') !== -1) { html = html.replace('á', '&aacute;'); }
+		    while (html.indexOf('é') !== -1) { html = html.replace('é', '&eacute;'); }
+		    while (html.indexOf('í') !== -1) { html = html.replace('í', '&iacute;'); }
+		    while (html.indexOf('ó') !== -1) { html = html.replace('ó', '&oacute;'); }
+		    while (html.indexOf('ú') !== -1) { html = html.replace('ú', '&uacute;'); }
+		    while (html.indexOf('º') !== -1) { html = html.replace('º', '&ordm;'); }
+		
+		    if(createHyperlink) {
+		        a = document.createElement('a');
+		        a.href = 'data:application/vnd.ms-excel' + ', ' + encodeURIComponent(html);
+		        //setting the file name
+		        a.download = 'Activation Plan Report.xls';
+		        //triggering the function
+		        a.click();
+		    }
+		    else {
+		        window.open('data:application/vnd.ms-excel,' + encodeURIComponent(html));
+		    }
+		    
+		}
+        
+        function ExportToExcel(promotionTable, Promotions, selectedYr, selectedBannerGrp, selectedState){
+            console.log(selectedYr);
+            var nAgt = navigator.userAgent;
+    
+		    var verOffset;
+		    
+		    if ((verOffset=nAgt.indexOf("Firefox"))!=-1) {
+		    
+		        tableToExcelChromeFirefox(promotionTable, Promotions, selectedYr, selectedBannerGrp, selectedState, false);
+		    
+		    }
+		    else if ((verOffset=nAgt.indexOf("Chrome"))!=-1) {
+		    
+		        tableToExcelChromeFirefox(promotionTable, Promotions, selectedYr, selectedBannerGrp, selectedState, true);
+		    
+		    }
+		    
+		    else if ((verOffset=nAgt.indexOf("MSIE"))!=-1) {
+		    
+		        tableToExcelIE(promotionTable, Promotions, selectedYr, selectedBannerGrp, selectedState);
+		    
+		    }
+		    
+		    else if ((verOffset=nAgt.indexOf("Safari"))!=-1) {
+		    
+		        tableToExcelChromeFirefox(promotionTable, Promotions, selectedYr, selectedBannerGrp, selectedState, false);
+		    
+		    }
+		    
+		    else {
+		    
+		        tableToExcelChromeFirefox(promotionTable, Promotions, selectedYr, selectedBannerGrp, selectedState, false);
+		    
+		    }
+        
+        }
+        var previous = 0;
+        /* @author Geeta Kushwaha
+         * @createdDate 25 Sept, 2013
+         * @description Export to Excel for Internet Explorer
+         *              uses activex and vba scripts
+         */
+        function tableToExcelIE(promotionTable, Promotions, selectedYr, selectedBannerGrp, selectedState){
+            //1 yr has 52 weeks
+            var columnNames = new Array('A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','AA','AB','AC','AD','AE','AF','AG','AH','AI','AJ','AK','AL','AM','AN','AO','AP','AQ','AR','AS','AT','AU','AV','AW','AX','AY','AZ','BA','BB','BC','BD','BE','BF','BG','BH','BI','BJ','BK','BL','BM','BN','BO','BP','BQ','BR','BS','BT','BU','BV','BW','BX','BY','BZ');
+            
+            var range, cell, numberOfColumns = 0;
+            var ExcelApp = new ActiveXObject("Excel.Application");
+		    var Workbook = ExcelApp.Workbooks.Add;
+		    var eSheets = ExcelApp.ActiveWorkbook.Sheets;
+		    var eSheet1 = eSheets(1);
+		    eSheet1.Name="Activation Plan";
+		    //ExcelApp.Visible = true;
+		    var i=5, j=0, redCellsIndex = 0;
+		    
+		    
+		    cell = eSheet1.Cells(1,1);
+		    cell.Value = getSelectedText(selectedYr) + ' Activation Plan';
+		    cell.font.bold = true
+		    cell.font.size = 18;
+		    
+		    cell = eSheet1.Cells(2,1);
+		    cell.Value = 'Promotion Year: '+getSelectedText(selectedYr);
+		    cell.Interior.ColorIndex = 17;
+		    console.log('Id: '+selectedBannerGrp);
+		    cell = eSheet1.Cells(3,1);
+		    cell.Value = 'Banner Group Account: '+getSelectedTextMultiple(selectedBannerGrp);
+		    cell.Interior.ColorIndex = 17;
+		    
+		    cell = eSheet1.Cells(4,1);
+		    cell.Value = 'State: '+getSelectedTextMultiple(selectedState);
+		    cell.Interior.ColorIndex = 17;
+		    
+		    var lastIndex = 0;
+            
+            $j('#promotionTable > tbody  > tr').each(function() {
+		        j=0; borderString = "";
+		        previous = 0;
+		        $j(this).find('td').each(function () {
+                   str= $j(this).html();
+                   //Rows with merge fields - Headers
+                   if(i===5 || i===6 || i===7){
+                       getRange(eSheet1,j,i+1,parseInt($j(this).attr("colspan")),str,columnNames,""+$j(this).css('background-color') != 'undefined',''+$j(this).css('background-color'));
+                   }
+                   else if(i=== 8) {
+                      cell = eSheet1.Cells(i+1,j+1);
+                      cell.Value = str;
+                      cell.font.bold = true;
+                      applyColorToRange(eSheet1.Range(columnNames[j]+(i+1)),''+$j(this).css('background-color'));
+                   }
+                   else {
+                      if(""+$j(this).attr("colspan")!="undefined"){
+                         getRange(eSheet1,j,i+1,parseInt($j(this).attr("colspan")),str,columnNames,""+$j(this).css('background-color') != 'undefined',''+$j(this).css('background-color')); 
+                      }
+                      else {
+                         previous++;
+                      }
+                      eSheet1.Cells(i+1,j+1).Value = str;
+                   }
+                   
+                   //Brand Column
+                   if(j===1){
+                       if(""+$j(this).css('background-color') != 'undefined'){
+					       applyColorToRange(eSheet1.Range("B"+(i+1)),''+$j(this).css('background-color'));
+                       }
+                   }
+                   j++;
+                });
+                if(i===8)
+                    numberOfColumns = j;
+		        i++;
+		     }); 
+		    range = eSheet1.Range("A9:"+columnNames[numberOfColumns-1]+i);
+            range.Borders.LineStyle = 1;
+            range.Borders.LineStyle.Color = -11489280;
+            range.Borders.LineStyle.Weight = 4;
+		    
+		    eSheet1.Range("A:A,B:B").Columns.AutoFit; 
+		    
+		    Workbook.SaveAs('Activation Plan Report.xls');
+     
+            ExcelApp.Visible = true;
+		     
+        }
+        /* @author Geeta Kushwaha
+         * @createdDate 26 Sept, 2013
+         * @description apply color to a range(excel)
+         */
+        function applyColorToRange(range, color){
+            var matchColors = /rgb\((\d{1,3}), (\d{1,3}), (\d{1,3})\)/;
+            var match = matchColors.exec(color);
+            if (match !== null) {
+                range.Interior.Color = rgb(parseInt(match[1]),parseInt(match[2]),parseInt(match[3]));
+            }
+        }
+                               
+        /* @author Geeta Kushwaha
+         * @createdDate 25 Sept, 2013
+         * @description for merged cells calculate the appropriate ranges
+         */
+        function getRange(eSheet1, col,row, addVal,str,columnNames,applyBgColor,color){
+            var rangeValue = "";
+            var cell, range;
+            if(previous === 0){
+                previous = addVal;
+                rangeValue = ""+columnNames[col]+row+":"+columnNames[col+addVal-1]+row;
+                cell = eSheet1.Cells(row,col+1);
+            }
+            else {
+                rangeValue = ""+columnNames[previous]+row+":"+columnNames[previous+addVal-1]+row;
+                cell = eSheet1.Cells(row,previous+1); 
+                previous += addVal;
+            }
+            
+            cell.Value = str;
+            cell.font.bold=true;
+            range = eSheet1.Range(rangeValue);
+            range.HorizontalAlignment = -4108;
+            range.MergeCells = true;
+            range.Borders.LineStyle = 1;
+            range.Borders.LineStyle.Color = -11489280;
+            range.Borders.LineStyle.Weight = 4;
+            if(applyBgColor)
+                applyColorToRange(range,color);
+        }
+        
+        /* @author Geeta Kushwaha
+         * @createdDate 25 Sept, 2013
+         * @description get selected text for picklist
+         */
+        function getSelectedText(elementId) {
+            'use strict';
+            var elt = document.getElementById(elementId);
+        
+            if (elt.selectedIndex === -1) { return null; }
+        
+            return elt.options[elt.selectedIndex].text;
+        }
+        /* @author Geeta Kushwaha
+         * @createdDate 26 Sept, 2013
+         * @description returns long value of rgb
+                        same as RGB(r,g,b) method of excel
+         */
+        function rgb(r,g,b){
+          return 256*256*b+256*g+r;
+        }
+        
+        function getSelectedTextMultiple(elementId) {
+            var elt = document.getElementById(elementId);
+            var selected1 = "";
+            for (var i = 0; i < elt.length; i++) {
+                if (elt.options[i].selected) {
+                    selected1 += elt.options[i].value+"; ";
+                }
+            }
+            selected1 = selected1.substring(0,selected1.lastIndexOf("; "));
+            return selected1;
+        }
+        
+        function loading(val) {
+            if (val) {
+              document.getElementById('contentLoading').style.display = 'block';
+              document.getElementById('contentLoaded').style.display = 'none';
+              document.getElementById('tableGrid').style.display = 'none';
+              
+            }
+            else {
+              document.getElementById('contentLoading').style.display = 'none';
+              document.getElementById('contentLoaded').style.display = 'block';
+               document.getElementById('tableGrid').style.display = 'block';
+            }
+        }
+        
+        // close current window of browser
+        function closeMe(){
+            var win = window.open("","_self"); /* url = "" or "about:blank"; target="_self" */
+            win.close();
+        }
+        function Home(){
+            window.location.replace("http://www.w3schools.com");
+        }
+        
+        
+
+    </script>
+    
+    <body>
+        <div id = "outerDiv" >
+            <apex:form id="formId">
+                <apex:Message style="color:red"/>
+                <div id="contentLoading">
+                    <br></br><br></br><br></br>
+                    <div class = "LoadingDiv">
+                       <img src="/img/loading.gif" alt="Loading graphic" height = "30px" width = "30px"/>
+                       <span class = "LoadingDiv">Loading......</span>
+                    </div>
+                </div>
+                <div id="contentLoaded">
+                    <div id = "yearDiv" >
+	                    <table>
+	                    	<tr>
+	                    		<td>Promotion Year </td>
+	                    		<td><apex:selectList value="{!selectedYear}" size="1"  id="selectYearId">
+	                                        <apex:selectOptions value="{!Years}"/>
+	                                </apex:selectList>
+	                            </td> 
+	                            <td width = "20px"></td>
+	                            <td> Banner Group Account </td>
+	                            <td><apex:selectList multiselect="true" value="{!selectedBannerGroupAccount}" size="5"  id="selectaccountId">
+	                                    <apex:selectOptions value="{!BannerGroupAccounts}"/>
+	                                </apex:selectList>
+	                            </td>
+	                            <td width = "20px"></td>
+	                    		<td> State </td>
+	                    		<td><apex:selectList multiselect="true" value="{!stateSelected}" size="5"  id="selectStateId">
+	                                        <apex:selectOptions value="{!stateAvailableList}"/>
+	                                    </apex:selectList>
+	                            </td>
+	                    		<td></td>
+	                    	</tr>
+	                    	<tr><td>&nbsp;</td></tr>
+	                   </table>
+	                   <table> 
+	                    	<tr>
+	                    		<td width = "40px"></td>
+	                    		<td width = "40px"></td>
+	                    		<td width = "40px"></td>
+	                    		<td width = "40px"></td>
+	                    		<td> 
+	                    			<div>
+	                            		<input type="button" class = "btn" name="Home go" value="Home" onclick="window.location.href='/'" style = "width:80px;"/>
+	                        		</div>
+	                        	</td>
+	                        	<td width = "40px"></td>
+	                    		<td><div >
+	                                    <input type="button" class = "btn" name="CloseMe" value="Close" onclick="closeMe()" style = "width:80px;"/>
+	                                </div>
+	                            </td>
+	                            <td width = "40px"></td>
+	                    		<td><div >
+	                                <input type = "button" class = "btn" Name = "Export" value ="Export" onclick="ExportToExcel('promotionTable', 'Promotions','{!$Component.formId.selectYearId}','{!$Component.formId.selectaccountId}', '{!$Component.formId.selectStateId}')" style = "width:80px;"/>
+	                            </div>
+	                            </td>
+	                            <td width = "40px"></td>
+	                    		<td><div >
+	                                <input type = "button" class = "btn" Name = "Run Report" value ="Run Report" onclick = "GetPromotions();" style = "width:80px;"/>
+	                            </div></td>
+	                    	</tr>
+	                    </table>    
+                    </div>
+                   <br></br><br></br>
+                    <apex:outputPanel id="javascriptPanelId">
+                        <div width = "100%">
+                            <apex:outputPanel rendered="{!showBannerGroupLimitError}">
+                              <div id = "AccountLimit" >You can not select more than 10 Banner Group Accounts</div> 
+                            </apex:outputPanel>
+                        </div>
+                        <script type="text/javascript" language="javascript">
+                            function callPromotion() {
+                                try {
+                                    var promotion = $j.parseJSON('{!promotionsJSON}');
+                                    
+                                    
+                                    loading(true);
+                                    // iterate on each account brand records
+                                    var rowNumber = 4; //skip starting 3 rows cause account and brand starts from 4t row
+                                    if(promotion != null){
+                                    var oldBrand;
+                                    var newBrand;
+                                    var cellcolor ;
+                                        // Iterate on each row of tables  
+                                        for(var y = 0;y < promotion.length;y++){ 
+                                            oldBrand = promotion[y].bN;
+                                            if(oldBrand != newBrand){
+                                                cellcolor = genColor(); 
+                                                newBrand =  oldBrand;
+                                            }
+                                            rowNumber = rowNumber + 1;
+                                            
+                                            var numCells = 1;
+                                            var totalColspan = 0; // keep track of total colspan for each row 
+                                            
+                                            // iterate on promotions and place them at relevant <td>
+                                            for(var x = 0 ; x <1; x++){
+                                                var cellsToBeSkipped = promotion[y].dM;
+                                                // if any promotions p2's position is after 27 td and earlier promotion p1's colspan was 4 then
+                                                // p1's new td position would be 27-3: 24
+                                                cellsToBeSkipped -= totalColspan; 
+                                                 
+                                                // set promotions value to variables
+                                                numCells = promotion[y].cS;
+                                                var innerText = promotion[y].pN;
+                                                //var promotionId = promotion[y].pId;
+                                                var tableId = 'promotionTable';
+                                                var bgColor = '#'+cellcolor;
+                            
+                                                // set color to account and brand name's cells
+                            
+                                                if(x == 0){
+                                                    var row = document.getElementById(tableId).rows[rowNumber];
+                                                    var accountStartCell = row.cells[x];
+                                                    //accountStartCell.style.backgroundColor = bgColor;
+                                                    var brandstartCell = row.cells[x+1];
+                                                    brandstartCell.style.backgroundColor = bgColor;
+                                                }
+                                                if(promotion[y].cS != null){
+                                                    renderPromotion(cellsToBeSkipped, rowNumber, numCells, innerText, bgColor, tableId);
+                                                    if(numCells != null){
+                                                        totalColspan += numCells-1;
+                                                    } 
+                                                }
+                                            }
+                                        }
+                                    }
+                                    loading(false);
+                                } catch(err){
+                                    console.log(err);
+                                }
+                                
+                            }
+                        </script>
+                    </apex:outputPanel>
+                    <div id="tableGrid" style = "display:none;">
+                        
+                        <apex:outputPanel id="tablePanelId">
+                            <apex:outputPanel rendered="{!showTableGrid}">
+                            <!--  For Banner group section -->
+                            <table id = "promotionTable" class = "promotion" border = "1px">
+                                <thead>
+                                    <tr><td colspan = "56"><b class = "activationplan"> <apex:outputPanel id="activationPlanYearId">{!selectedYear}  ACTIVATION PLAN </apex:outputPanel></b></td></tr>
+                                </thead>
+                                <tbody>
+	                                <tr>
+	                                    <td class ="MonthLabel" colspan="2">Month</td>
+	                                    <apex:repeat value="{!monthList}" var="M">
+	                                        <td colspan ="{!monthMap[M]}" name ="format" class = "monthname">{!M}</td>
+	                                    </apex:repeat>
+	                                </tr>  
+	                                <tr>
+	                                    <td class = "quarter" colspan="2">Quarter</td>
+	                                    <td colspan ="{!JanuaryQuarterColspan}" class = "quarter">Qtr4</td>
+	                                    <td colspan ="{!quarter1Colspan}"  class = "quarterBgColor">Qtr1</td>
+	                                    <td colspan ="{!quarter2Colspan}" class = "quarter" >Qtr2</td>
+	                                    <td colspan ="{!quarter3Colspan}" class = "quarterBgColor">Qtr3</td>
+	                                    <td colspan ="{!quarter4Colspan}" class = "quarter" >Qtr4</td>
+	                                </tr> 
+	                                <tr> 
+	                                    <td class = "quarter" colspan="2">Call Cycle</td>
+	                                    <td colspan ="7" class = "callCycle" >H1Call Cycle 1</td>
+	                                    <td colspan ="7" class = "callCycleBgColor">H2Call Cycle 2</td>
+	                                    <td colspan ="7" class = "callCycle" >H3Call Cycle 3</td>
+	                                    <td colspan ="7" class = "callCycleBgColor" >H4Call Cycle 4</td>
+	                                    <td colspan ="7" class = "callCycle" >H5Call Cycle 5</td>
+	                                    <td colspan ="7" class = "callCycleBgColor" >H6Call Cycle 6</td>
+	                                    <td colspan ="7" class = "callCycle" >H7Call Cycle 7</td>
+	                                    <td colspan ="7" class = "callCycleBgColor" >H7Call Cycle 1</td>
+	                                </tr>
+	                            
+	                                <tr>
+	                                    <td width = "457px" class = "BannerGroup">Banner Group Account</td>
+	                                    
+	                                    <td class = "BannerGroup" width = "250px">Brand</td>
+	                                    <!-- For date starting of the week -->
+	                                    <apex:repeat value="{!weekStartDates}" var="startDate">
+	                                        <td class = "BannerGroup">{!startDate}</td>
+	                                    </apex:repeat>
+	                                
+	                                </tr>
+	                           
+	                                <apex:repeat value="{!accountBrandList}" var="accBrand">
+	                                    <tr>
+	                                        <td class = "Account">{!accBrand.aN}</td>
+	                                        <td class = "Brand">{!accBrand.bN}</td>
+	                                        <apex:repeat value="{!weekStartDates}" var="t">
+	                                            <td>
+	                                                
+	                                            </td> 
+	                                            
+	                                        </apex:repeat>
+	                                    </tr>
+	                                </apex:repeat>
+                                </tbody>
+                            </table>
+                            </apex:outputPanel>
+                        </apex:outputPanel>
+                    </div>   
+                </div>   
+                <apex:actionFunction name="GetPromotions" action="{!getOnGoingPromotions}" reRender="tablePanelId, activationPlanYearId, javascriptPanelId" oncomplete="callPromotion();" status="loading"/>
+                <apex:actionStatus id="loading" onstart="loading(true)" onstop="loading(false)"  />
+                
+            </apex:form>
+        </div>    
+    </body>
+</apex:page>

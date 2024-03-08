@@ -1,0 +1,194 @@
+.ui-dialog-titlebar {
+    background-color: rgb(0,62,126) !important;
+    background-image: none;
+    color: #000;
+}
+.ui-dialog, .ui-dialog-title {
+    color: white;
+}
+.ui-state-default, .ui-widget-content .ui-state-default, .ui-widget-header .ui-state-default {
+    background-color: white !important;
+}
+body {
+    background-color:white; 
+    font-family:"Arial";
+}
+ul {
+    list-style:none;
+    text-align:left;
+    padding:0px;
+    margin-top:10px !important;
+    margin-bottom:0 !important;
+}
+ul li {
+    text-align:left !important;
+    padding:0px;
+    margin-left:2px !important;
+}
+th {
+    font-weight:normal !important;
+}
+table{
+    width:100%;
+}
+
+#filterTable td {
+    display: table-cell;
+    width:10%;
+    height:30px;
+}
+        
+.PlanningTabletd {
+    border-left: 1px solid #ddd;
+    border-top: 1px solid #ddd;
+    display: table-cell;
+    font-size:1em;
+    width:7%;   
+    min-width:120px;
+    height:60px;
+    padding:3px;
+    vertical-align: top;
+}
+        
+.tdHeaderLabel a:hover {
+    color:White !important;
+}
+ 
+.PlanningTabletd div:hover {
+    cursor:pointer;
+}
+        
+.PlanningTabletd:hover {
+    border:1px solid red !important;
+}
+        
+.PTheaderColumn {
+    border-left: 1px solid grey;
+    border-bottom: 1px solid black;
+    display: table-cell;
+    height:30px;
+    background-color:#CDE8F0;
+    font-size:12px;
+    vertical-align: middle;
+    font-weight:bold !important;
+    text-align:center !important;
+    width:7%;
+}
+.PlanningTablebtn {
+    background:white !important;
+}
+
+#totalCallsRow td{
+    height:30px;
+    border-left: 1px solid #ddd;
+    border-top: 1px solid #ddd;
+    width:7%;
+    min-width:120px;
+    font-size:12px;
+    padding:3px;
+}
+.completedTask {
+    color: red !important;
+}
+# td{
+    width:110px !important;
+}
+.allBorder {
+    border:1px black solid;
+}
+.additionalTasks {
+    color: blue !important;
+}
+.messageTable {
+    background-color:#ffc!important;
+}
+/*Dark Blue Color For Filters*/
+.tdLabel {
+    background-color:rgb(0,62,126);
+    color:white !important;
+    padding:2px !important;
+}
+/*Dark Header Color (Sort)*/
+.tdHeaderLabel {
+   background-color:rgb(0,62,126)  !important;
+}
+/*Sot Link Color*/
+.tdHeaderLabel a {
+    color:white !important;
+}
+/*Light Blue Color table Data*/
+.tdData {
+    background-color:rgb(173,182,212);
+}
+/*Red Week Headers*/
+.tdRedHeaders {
+    background-color:rgb(198,12,48) !important;
+}
+.btn {
+  background:rgb(0,62,126) !important;
+  color:white !important;  
+}
+        
+/*Change Dialog Header Color*/
+.ui-widget-header {
+    background-color:#CDE8F0;
+}
+/*set Close button icon*/
+.ui-icon {
+    background-image: url({!$Resource.JQueryUIIconSet}) !important; /*images/ui-icons_888888_256x240.png) !important;*/
+}
+
+/*Change Jquery Buttons Color*/
+.ui-state-default, .ui-widget-content .ui-state-default, .ui-widget-header .ui-state-default {
+    background-color:#CDE8F0;
+}
+.iconButton{
+    padding:0px !important;
+    height:16px;
+    width:16px;
+    border:0px !important;
+    background-color:white !important;
+}
+
+#innerFilterTable td{
+    width:110px !important;
+}
+        
+.wordwrap { 
+   white-space: pre-wrap;      
+   white-space: -moz-pre-wrap;  
+   white-space: -pre-wrap;
+   white-space: -o-pre-wrap;   
+   word-wrap: break-word;
+   padding:0px;
+}
+
+table.callVisitTasks {
+    font-size:12px;
+    color:#333333;
+    width:100%;
+    border-width: 1px;
+    border-color: #a9a9a9;
+    border-collapse: collapse;
+}
+
+table.callVisitTasks th {
+    font-size:12px;
+    background-color:#b8b8b8;
+    border-width: 1px;
+    padding: 8px;
+    border-style: solid;
+    border-color: #a9a9a9;text-align:left;
+}
+
+table.callVisitTasks tr {
+    background-color:#ffffff;
+}
+
+table.callVisitTasks td {
+    font-size:12px;
+    border-width: 1px;
+    padding: 8px;
+    border-style: solid;
+    border-color: #a9a9a9;
+}

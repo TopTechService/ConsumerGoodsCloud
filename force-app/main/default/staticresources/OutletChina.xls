@@ -1,0 +1,67 @@
+NAME,BILLINGSTREET,BILLINGCITY,BILLINGSTATE,BILLINGPOSTALCODE,BILLINGCOUNTRY,ACCOUNT_GRADING__C,REGION_CHINA__C
+China Outlet,1,Shanghai,Anhui ,10000,China,,
+Test China - Outlet,2,Beijing,Fujian ,130000 ,China,A,SHANGHAI
+China Account,3,Chongqing,Gansu ,250000 ,China,A,
+Test China - Distributor,4,Hong Kong,Guangdong ,266000 ,China,B,SHANGHAI
+Shanghai Haolaixi1,5,Guangzhou,Guizhou ,300000 ,China,B,EAST
+Shanghai Taifu1,6,Tianjin,Hainan ,310000 ,China,C,WEST
+Changzhou Zunheng1,7,Wuhan,Hebei ,315000 ,China,C,NORTH
+Suzhou Shangrila,8,Shantou,Heilongjiang ,050000 ,China,D,SOUTH
+Wuxi Dewang,9,Nanjing,Henan ,350000 ,China,D,
+Zhangjiagang Xinruntai,10,Chengdu,Hubei ,361000 ,China,,SHANGHAI
+Hangzhou Longteng,11,Shenyang,Hunan ,400000 ,China,A,EAST
+Qingdao Hongquan,12,Foshan,Jiangsu ,410000 ,China,A,WEST
+Jinan Jilu,13,Jinan,Jiangxi ,430000 ,China,B,NORTH
+Pingdu Zhongyi,14,Xi'an,Jilin ,450000 ,China,B,SOUTH
+Yantai Tianai,15,Harbin,Liaoning ,510000 ,China,C,
+Changsha Chunmei,16,Qingdao,Qinghai ,514500,China,C,SHANGHAI
+Guizhou Hengxinlong,17,Hangzhou,Shaanxi ,518000 ,China,D,EAST
+ Lanzhou Dashanghai,18,Suzhou,Shandong ,523000,China,D,WEST
+Guangzhou Zhaohui,19,Dalian,Shanxi ,530000 ,China,,NORTH
+Beijing Rongxinhefeng,20,Shenzhen,Sichuan ,550000 ,China,A,SOUTH
+Beijing Jintongdeyuan,21,Changchun,Yunnan ,570000 ,China,A,
+Tianwei,22,Shijiazhuang,Zhejiang ,610000,China,B,SHANGHAI
+Haerbin Jien,23,Taiyuan,Guangxi Zhuang,630000,China,B,EAST
+Dalian Wanxi,24,Wuxi,Inner Mongolia,650000,China,C,WEST
+Shenyang Yifeng,25,Zhengzhou,Ningxia Hui,650000,China,C,NORTH
+China Outlet3,26,Xuzhou,Xinjiang Uighur,710000 ,China,D,SOUTH
+Test China - Outlet3,27,Changsha,Tibet,730000 ,China,D,
+China Account3,28,Kunming,Beijing Municipality,750000 ,China,,SHANGHAI
+Test China - Distributor3,29,Lanzhou,Chongqing Municipality,810000,China,A,EAST
+Shanghai Haolaixi3,30,Hefei,Shanghai Municipality,830000 ,China,A,WEST
+Shanghai Taifu3,31,Ürümqi,Tianjin Municipality ,850000 ,China,B,NORTH
+Changzhou Zunheng3,32,Nanchang,Hong Kong,10001,China,B,SOUTH
+Suzhou Shangrila3,33,Tangshan,Macau,130000 ,China,C,
+Wuxi Dewang3,34,Yangzhou,Anhui ,250000 ,China,C,SHANGHAI
+Zhangjiagang Xinruntai3,35,Guiyang,Fujian ,266000 ,China,D,EAST
+Hangzhou Longteng3,36,Fuzhou,Gansu ,300000 ,China,D,WEST
+Qingdao Hongquan3,37,Weifang,Guangdong ,310000 ,China,,NORTH
+Jinan Jilu3,38,Zibo,Guizhou ,315000 ,China,A,SOUTH
+Pingdu Zhongyi3,39,Zhanjiang,Hainan ,050000 ,China,A,
+Yantai Tianai3,40,Linyi,Hebei ,350000 ,China,B,SHANGHAI
+Changsha Chunmei3,41,Xiamen,Heilongjiang ,361000 ,China,B,EAST
+Guizhou Hengxinlong3,42,Jiangmen,Henan ,400000 ,China,C,WEST
+ Lanzhou Dashanghai3,43,Nanning,Hubei ,410000 ,China,C,NORTH
+Guangzhou Zhaohui3,44,Ningbo,Hunan ,430000 ,China,D,SOUTH
+Beijing Rongxinhefeng3,45,Nantong,Jiangsu ,450000 ,China,D,
+Beijing Jintongdeyuan3,46,Yantai,Jiangxi ,510000 ,China,,SHANGHAI
+Tianwei3,47,Huizhou,Jilin ,514501,China,A,EAST
+Haerbin Jien3,48,Maoming,Liaoning ,518000 ,China,A,WEST
+Dalian Wanxi3,49,Anshan,Qinghai ,523001,China,B,NORTH
+Shenyang Yifeng2,50,Jilin City,Shaanxi ,530000 ,China,B,SOUTH
+China Outlet2,51,Xiangyang,Shandong ,550000 ,China,C,
+Test China - Outlet2,52,Handan,Shanxi ,570000 ,China,C,SHANGHAI
+China Account2,53,Datong,Sichuan ,670000,China,D,EAST
+Test China - Distributor2,54,Baotou,Yunnan ,684000,China,D,WEST
+Shanghai Haolaixi2,55,Fushun,Zhejiang ,698000,China,,NORTH
+Shanghai Taifu2,56,Changzhou,Guangxi Zhuang,712000,China,A,SOUTH
+Changzhou Zunheng2,57,Suqian,Inner Mongolia,710000 ,China,A,SOUTH
+Suzhou Shangrila2,58,Luoyang,Ningxia Hui,730000 ,China,A,SHANGHAI
+Wuxi Dewang2,59,Huai'an,Xinjiang Uighur,750000 ,China,B,EAST
+Zhangjiagang Xinruntai2,60,Wuhu,Tibet,810001,China,B,WEST
+Hangzhou Longteng2,61,Qiqihar,Beijing Municipality,830000 ,China,C,NORTH
+Qingdao Hongquan2,62,Daqing,Chongqing Municipality,850000 ,China,C,SOUTH
+Jinan Jilu2,63,Baoding,Shanghai Municipality,10002,China,D,SHANGHAI
+Pingdu Zhongyi2,,Zhuhai,Tianjin Municipality ,130000 ,China,D,EAST
+Yantai Tianai2,65,,Hong Kong,250000 ,China,,WEST
+Changsha Chunmei2,66,,Macau,266000 ,China,A,NORTH

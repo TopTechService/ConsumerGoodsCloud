@@ -1,0 +1,1580 @@
+<apex:page sidebar="false" showHeader="true" id="ObjectiveManagementLightning" controller="ObjectiveManagementController" standardStylesheets="false">
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <head>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    </head>
+
+    <apex:slds />
+
+    <apex:stylesheet value="{!$Resource.JQueryUICSS}"/>
+
+    <apex:includeScript value="{!URLFOR($Resource.jquery, '/jquery/js/jquery.min.2.0.0.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.jquery, '/jquery/js/jquery-ui-1.10.2.custom.min.js')}"/>
+
+    <apex:stylesheet value="{!URLFOR($Resource.jquery, '/jquery/css/jquery.ui.tinytbl.css')}"/>
+
+    <apex:includeScript value="{!URLFOR($Resource.jquery, '/jquery/js/jquery.ui.tinytbl.js')}"/>
+    <apex:includeScript value="{!$Resource.slideout}"/>
+    <apex:includeScript value="{!$Resource.demo}"/>
+
+    <apex:stylesheet value="{!$Resource.ObjectivePlanningCSS}"/>
+
+    <style>
+        .slide-out-divcp {
+            padding: 20px;
+            width: 315px;
+            background: rgb(173, 182, 212);
+            border: 2px solid #29216d;
+            height: unset !important;
+        }
+
+        .scroll-up-button-container {
+            padding: 2rem;
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .scroll-up-button {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            background: black;
+            opacity: 0;
+            color: white;
+            cursor: pointer;
+            transition: opacity 0.2s ease-in-out;
+            text-align: center;
+            line-height: 2.5rem;
+            font-size: 2rem;
+            pointer-events: none;
+        }
+
+        .scroll-up-button.visible {
+            opacity: 0.5;
+            pointer-events: all;
+        }
+
+        .scroll-up-button.visible:hover {
+            opacity: 1;
+        }
+    </style>
+
+    <apex:pageBlock id="mainBlock">
+        <apex:form id="mainForm" rendered="true" styleClass="slds-scope slds-m-around--medium">
+            <apex:actionFunction name="populatenewobjectives" rerender="objectivePicklist" action="{!populateNewObjectives}" oncomplete="checkApexMessage('{!messageSeverity}', '{!messageSummary}')"/>
+            <apex:actionFunction name="search" action="{!searchAccounts}" rerender="PlanningGrid,totalCallsRowPanel,error" oncomplete="destroyLoadingDialog();checkApexMessage('{!messageSeverity}', '{!messageSummary}');"/>
+            <apex:actionFunction name="callExport" action="{!downloadExcel}"/>
+            <apex:actionFunction name="callExportForOutlet" action="{!downloadExcelForOutlet}"/>
+
+            <div class="scroll-up-button-container">
+                <div class="scroll-up-button" title="Up">
+                    &uarr;
+                </div>
+            </div>
+
+            <div class="slds-page-header slds-grid">
+                <div class="slds-page-header__row  slds-col">
+                    <div class="slds-page-header__col-title">
+                        <div class="slds-grid slds-grid--vertical-align-center">
+                            <div class="slds-media__figure">
+                                <span class="slds-icon_container" title="Objective Management">
+                                    <apex:image value="{!$Resource.CallPlanningIcon}"/>
+                                    <span class="slds-assistive-text">Objective Management</span>
+                                </span>
+                            </div>
+                            <div class="slds-media__body">
+                                <div class="slds-page-header__name">
+                                    <div class="slds-page-header__name-title">
+                                        <h1>
+                                            <span class="slds-page-header__title slds-truncate" title="Objective Management">Objective Management</span>
+                                        </h1>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div align="center" class="slds-col">
+                    <div class="slds-grid slds-grid--vertical-align-end">
+                        <div>
+                            <div class="slds-form-element">
+                                <div class="slds-form-element__control">
+                                    <apex:inputText html-placeholder="Search Outlets" value="{!searchAccountName}" id="searchAccountName2" size="20" styleClass="slds-input" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-m-left--small">
+                            <apex:commandButton styleClass="slds-button slds-button--neutral" value="Search" action="{!searchAccounts}" rerender="PlanningGrid,totalCallsRowPanel,error" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();checkApexMessage('{!messageSeverity}', '{!messageSummary}');"/>
+                        </div>
+                    </div>
+                </div>
+
+                <div align="right" class="slds-col">
+                    <div class="slds-button-group" role="group">
+                        <div class="slds-col slds-no-flex slds-grid slds-align-top">
+                            <input class="slds-button slds-button--neutral" id="toggleFilterSection" type="button" value="Filter" style="border-bottom-right-radius: 0; border-top-right-radius: 0; border-right: none"/>
+                        </div>
+                        <div class="slds-dropdown-trigger slds-dropdown-trigger_click" id="dropdownSelections">
+                            <button aria-haspopup="true" class="slds-button slds-button_icon slds-button_icon-border-filled" onclick="return false" title="Show More" style="border-radius: 0 .25rem .25rem 0">
+                                <svg aria-hidden="true" class="slds-button__icon"><use xlink:href="/resource/1551151878000/SLDS274/icons/utility-sprite/svg/symbols.svg#down" xmlns:xlink="http://www.w3.org/1999/xlink"></use></svg>
+                                <span class="slds-assistive-text">Show More</span>
+                            </button>
+                            <div class="slds-dropdown slds-dropdown_right">
+                                <ul aria-label="Show More" class="slds-dropdown__list" role="menu" style="margin-top: 0 !important;">
+                                    <li class="slds-dropdown__item" role="presentation">
+                                        <a href="javascript:void(0);" role="menuitem" tabindex="-1">
+                                            <input class="menuitem" type="button" name="Export1" value="Export All Outlets" onclick="callExport();" style="border: none; background: none; outline: none"/>
+                                        </a>
+                                    </li>
+                                    <li class="slds-dropdown__item" role="presentation">
+                                        <a href="javascript:void(0);" role="menuitem" tabindex="-1">
+                                            <input class="menuitem" type="button" name="Export" value="Export Outlets with Objectives" onclick="callExportForOutlet();" style="border: none; background: none; outline: none"/>
+                                        </a>
+                                    </li>
+                                    <li class="slds-dropdown__item" role="presentation">
+                                        <a href="javascript:void(0);" role="menuitem" tabindex="-1">
+                                            <apex:commandButton styleClass="menuitem" value="Send email to Manager" action="{!sentMailToManager}" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();" rerender="error" style="border: none; background: none; outline: none"/>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <article class="slds-card" style="border-top-left-radius: 0; border-top-right-radius: 0; border-top: none; margin-top: 0; padding-top: .75rem; display: block" id="filterSection">
+                <div class="slds-card__body slds-card__body_inner" style="margin-top: 0">
+                    <div class="slds-m-left--medium">
+                        <div class="slds-grid slds-grid--vertical-align-center slds-grid--align-spread">
+                            <div class="slds-grid slds-grid--vertical-align-center">
+                                <div class="slds-m-right--medium">
+                                    <div class="slds-form-element">
+                                        <label class="slds-form-element__label" for="select-01">Banner Group</label>
+                                        <div class="slds-form-element__control">
+                                            <div class="slds-select_container">
+                                                <apex:selectList value="{!selectedBanerGroup}" multiselect="false" size="1" id="BannerGroup" styleClass="slds-select">
+                                                    <apex:selectOptions value="{!bannerGroups}"/>
+                                                </apex:selectList>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-m-right--medium">
+                                    <div class="slds-form-element">
+                                        <label class="slds-form-element__label" for="select-01">Owner</label>
+                                        <div class="slds-form-element__control">
+                                            <div class="slds-select_container">
+                                                <apex:selectList value="{!selectedOutlet}" multiselect="false" size="1" id="OuletFilter" styleClass="slds-select">
+                                                    <apex:selectOptions value="{!outlets}"/>
+                                                </apex:selectList>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-m-right--medium">
+                                    <div class="slds-form-element">
+                                        <label class="slds-form-element__label" for="select-01">Grading</label>
+                                        <div class="slds-form-element__control">
+                                            <div class="slds-select_container">
+                                                <apex:selectList value="{!selectedGrading}" multiselect="false" size="1" id="Grading" styleClass="slds-select">
+                                                    <apex:selectOptions value="{!gradings}"/>
+                                                </apex:selectList>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-m-right--medium">
+                                    <div class="slds-form-element">
+                                        <label class="slds-form-element__label" for="select-01">Task Status</label>
+                                        <div class="slds-form-element__control">
+                                            <div class="slds-select_container">
+                                                <apex:selectList value="{!selectedtaskStatus}" multiselect="false" size="1" id="taskStatusfilter" styleClass="slds-select">
+                                                    <apex:selectOptions value="{!taskStatus}"/>
+                                                </apex:selectList>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-m-right--medium">
+                                    <div class="slds-form-element">
+                                        <label class="slds-form-element__label" for="select-01">Channel</label>
+                                        <div class="slds-form-element__control">
+                                            <div class="slds-select_container">
+                                                <apex:selectList value="{!selectedAccountChannel}" multiselect="false" size="1" id="channelfilter" styleClass="slds-select">
+                                                    <apex:selectOptions value="{!AccountChannels}"/>
+                                                </apex:selectList>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-form-element slds-m-right--medium">
+                                    <label class="slds-form-element__label" for="select-01">{!$Label.numberofoutletsperpage}</label>
+                                    <div class="slds-form-element__control">
+                                        <div class="slds-select_container">
+                                            <apex:selectList value="{!recordsPerPage}" multiselect="false" size="1" onchange="openLoadingdialog();search();" styleClass="slds-select">
+                                                <apex:selectOptions value="{!numberOfOutlets}"/>
+                                            </apex:selectList>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-m-right--medium">
+                                    <div class="slds-form-element">
+                                        <div class="slds-form-element__control">
+                                            <div class="slds-checkbox">
+                                                <apex:inputCheckbox value="{!isCalledOnCheck}" id="checkbox-000"/>
+                                                <label class="slds-checkbox__label" for="ObjectiveManagementLightning:mainBlock:mainForm:checkbox-000">
+                                                    <span class="slds-checkbox_faux"></span>
+                                                    <span class="slds-form-element__label">Called On</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-grid slds-grid--vertical-align-center slds-grid--align-center">
+                                <apex:commandButton styleClass="slds-button slds-button_neutral" value="Refresh" action="{!searchAccounts}" rerender="PlanningGrid,totalCallsRowPanel,error" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();checkApexMessage('{!messageSeverity}', '{!messageSummary}');" style="float: right;"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </article>
+
+            <style>
+                .messageTable {
+                    background: none !important;
+                }
+
+                .objective-list-item-buttons {
+                    position: absolute;
+                    top: 0;
+                    right: 0;
+                }
+
+                .objective-list-item-buttons input {
+                    background: none;
+                    border: none;
+                    cursor: pointer;
+                    font-size: 1.5rem;
+                    padding: 0 !important;
+                    font-weight: bold;
+                    width: 20px;
+                    height: 20px;
+                    line-height: 20px;
+                    outline: none;
+                }
+
+                .objective-list-item-buttons .add {
+                    color: green;
+                }
+
+                .objective-list-item-buttons .remove {
+                    color: red;
+                }
+            </style>
+
+            <div class="slds-m-top--medium slds-grid slds-m-bottom--medium slds-grid--align-center">
+                <div id="errorMessages">
+                    <apex:pageMessages id="error"/>
+                </div>
+            </div>
+
+            <apex:outputPanel rendered="{!displayResults}" id="PlanningGrid" layout="block" styleClass="slds-grid">
+                <apex:actionFunction name="resort" action="{!sortAccount}" reRender="PlanningGrid" onComplete="destroyLoadingDialog()"/>
+                <apex:actionFunction name="resortFixed" action="{!sortAccountFixed}" reRender="PlanningGrid" onComplete="destroyLoadingDialog()"/>
+
+                <div style="position: fixed; top: 0; left: 1rem; width: calc(100% - 2rem); background: white; z-index: 1; display: none" class="slds-grid fixed-header">
+                    <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-border--left slds-no-row-hover left-table slds-border--right" style="min-width: 460px; width: 460px; display: inline-block">
+                        <thead>
+                            <tr class="slds-line-height_reset" style="height: 42px">
+                                <th class="" scope="col" style="width: 460px;">
+                                    <div style="height: 42px" class="slds-truncate slds-grid slds-grid--align-spread slds-grid--vertical-align-center" title="Outlet">
+                                        <div>
+                                            Outlet
+                                        </div>
+                                        <div class="slds-grid slds-grid--vertical-align-center">
+                                            SORT BY:
+                                            <div class="slds-form-element slds-m-left--x-small">
+                                                <div class="slds-form-element__control">
+                                                    <div class="slds-select_container">
+                                                        <apex:selectList styleClass="slds-select" value="{!currentSortFieldFixed}" onChange="resortFixed(); openLoadingdialog()" size="1">
+                                                            <apex:selectOption itemValue="Outlet" itemLabel="Outlet"/>
+                                                            <apex:selectOption itemValue="BannerGroup" itemLabel="Banner Group"/>
+                                                            <apex:selectOption itemValue="City" itemLabel="City"/>
+                                                            <apex:selectOption itemValue="postCode" itemLabel="Post Code"/>
+                                                            <apex:selectOption itemValue="Volume" itemLabel="Volume"/>
+                                                            <apex:selectOption itemValue="Grading" itemLabel="Grading"/>
+                                                        </apex:selectList>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="slds-form-element slds-m-left--x-small">
+                                                <div class="slds-form-element__control">
+                                                    <div class="slds-select_container">
+                                                        <apex:selectList styleClass="slds-select" value="{!currentSortDirectionFixed}" onChange="resortFixed(); openLoadingdialog()" size="1">
+                                                            <apex:selectOption itemValue="ASC" itemLabel="ASC"/>
+                                                            <apex:selectOption itemValue="DESC" itemLabel="DESC"/>
+                                                        </apex:selectList>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </th>
+                            </tr>
+                        </thead>
+                    </table>
+                    <div style="flex: 1; overflow: hidden; display: inline-block; width: calc(100% - 460px);">
+                        <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-border--right slds-table_col-bordered slds-no-row-hover right-table" style="position: relative">
+                            <thead>
+                                <tr class="slds-line-height_reset" style="height: 42px">
+                                    <apex:repeat value="{!sortedObjectivesList}" var="objectiveId">
+                                        <th class="" scope="col" id="{!objectiveId}">
+                                            <div class="slds-truncate" style="height: 42px">
+                                                <div>
+                                                    <apex:commandLink onclick="openLoadingdialog();" rerender="error,objectiveInfoPanel" action="{!objectiveInfo}" oncomplete="destroyLoadingDialog(),objectiveInformation();" value="{!currentObjectivesMap[objectiveId].Name}">
+                                                        <apex:param name="objectiveId" value="{!objectiveId}" assignTo="{!objectiveIdClicked}"/>
+                                                    </apex:commandLink>
+                                                </div>
+                                                <div>
+                                                    <apex:outputText value="{!currentObjectivesMap[objectiveId].Channel__c}"/>
+                                                </div>
+                                                <div class="objective-list-item-buttons">
+                                                    <apex:commandButton rendered="{!currentObjectivesMap[objectiveId].Enable_Add_All_Remove_All__c && displayAddButton}" onclick="addAllRemoteTask('{!selectedGrading}', '{!selectedBanerGroup}', '{!objectiveId}', '{!JSENCODE(currentObjectivesMap[objectiveId].Name)}' ,'{!currentObjectivesMap[objectiveId].Priority_KPI__c}', '{!JSENCODE(searchAccountName)}' , '{!isCalledOnCheck}');" rerender="error" styleClass="add" value="+">
+                                                        <apex:param name="objectiveId" value="{!objectiveId}" assignTo="{!objectiveId}"/>
+                                                    </apex:commandButton>
+                                                    <apex:commandButton rendered="{!currentObjectivesMap[objectiveId].Enable_Add_All_Remove_All__c && displayAddButton}" onclick="removeAllRemoteTask('{!selectedGrading}', '{!selectedBanerGroup}', '{!objectiveId}', '{!currentObjectivesMap[objectiveId].Priority_KPI__c}', '{!JSENCODE(searchAccountName)}' );" rerender="error" styleClass="remove" value="-">
+                                                        <apex:param name="objectiveId" value="{!objectiveId}" assignTo="{!objectiveId}"/>
+                                                    </apex:commandButton>
+                                                </div>
+                                            </div>
+                                        </th>
+                                    </apex:repeat>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
+                <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-border--left slds-no-row-hover left-table slds-border--right" style="min-width: 460px; width: 460px; max-width: 460px; overflow: hidden">
+                    <thead>
+                        <tr class="slds-line-height_reset" style="height: 42px">
+                            <th class="" scope="col">
+                                <div style="height: 42px;" class="slds-truncate slds-grid slds-grid--align-spread slds-grid--vertical-align-center" title="Outlet">
+                                    <div>
+                                        Outlet
+                                    </div>
+                                    <div class="slds-grid slds-grid--vertical-align-center">
+                                        SORT BY:
+                                        <div class="slds-form-element slds-m-left--x-small">
+                                            <div class="slds-form-element__control">
+                                                <div class="slds-select_container">
+                                                    <apex:selectList styleClass="slds-select" value="{!currentSortField}" onChange="resort(); openLoadingdialog()" size="1">
+                                                        <apex:selectOption itemValue="Outlet" itemLabel="Outlet"/>
+                                                        <apex:selectOption itemValue="BannerGroup" itemLabel="Banner Group"/>
+                                                        <apex:selectOption itemValue="City" itemLabel="City"/>
+                                                        <apex:selectOption itemValue="postCode" itemLabel="Post Code"/>
+                                                        <apex:selectOption itemValue="Volume" itemLabel="Volume"/>
+                                                        <apex:selectOption itemValue="Grading" itemLabel="Grading"/>
+                                                    </apex:selectList>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="slds-form-element slds-m-left--x-small">
+                                            <div class="slds-form-element__control">
+                                                <div class="slds-select_container">
+                                                    <apex:selectList styleClass="slds-select" value="{!currentSortDirection}" onChange="resort(); openLoadingdialog()" size="1">
+                                                        <apex:selectOption itemValue="ASC" itemLabel="ASC"/>
+                                                        <apex:selectOption itemValue="DESC" itemLabel="DESC"/>
+                                                    </apex:selectList>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <apex:repeat value="{!accounts}" var="acc">
+                        <tr class="slds-hint-parent">
+                            <td data-label="">
+                                <div class="slds-truncate slds-grid slds-grid--align-spread" title="">
+                                    <div>
+                                        <a href="/{!acc.Id}" style="white-space: pre-wrap; font-weight: bold">{!acc.Name}</a>
+                                        <apex:outputPanel rendered="{!acc.Account_Grading__c != null}">
+                                            <b>[{!acc.Account_Grading__c}]</b>
+                                        </apex:outputPanel>
+                                    </div>
+                                    <div style="text-align: right">
+                                        <apex:outputPanel layout="block" rendered="{!bannerGrpFlag}">
+                                            <!--<apex:commandLink value="Banner Group: " action="{!sortAccount}" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();" id="bannerGroupSort" styleClass="sorttablelinks" rerender="PlanningGrid,error,totalCallsRowPanel">-->
+                                                <!--<apex:param name="currentSortField" value="BannerGroup" assignTo="{!currentSortField}"/>-->
+                                            <!--</apex:commandLink>-->
+                                            {!acc.Banner_Group_Name__c}
+                                        </apex:outputPanel>
+                                        <apex:outputPanel layout="block" rendered="{!cityFlag}">
+                                            <!--<apex:commandLink value="City: " action="{!sortAccount}" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();" id="suburbSort" styleClass="sorttablelinks" rerender="PlanningGrid,error,totalCallsRowPanel">-->
+                                                <!--<apex:param name="currentSortField" value="City" assignTo="{!currentSortField}"/>-->
+                                            <!--</apex:commandLink>-->
+                                            {!acc.BillingCity} - {!acc.BillingPostalCode}
+                                        </apex:outputPanel>
+                                        <div style="opacity: 0.75;">
+                                            Volume 9LE: {!acc.Volume__c} 
+                                            <apex:outputText value="{0, number, ###,##0.##}">
+                                                                <span style="color:grey"> - LY :</span>
+                                                                <apex:param value="{!acc.Volume_9LE_LY__c}"/>
+                                                            </apex:outputText>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </apex:repeat>
+                    <tr>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                    </tr>
+                    </tbody>
+                </table>
+                <div class="right-table-container" style="flex: 1; overflow: auto">
+                    <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-border--right slds-table_col-bordered slds-no-row-hover right-table">
+                    <thead>
+                    <tr class="slds-line-height_reset" style="height: 42px !important;">
+                        <apex:repeat value="{!sortedObjectivesList}" var="objectiveId">
+                            <th class="" scope="col" id="{!objectiveId}">
+                                <div class="slds-truncate" style="height: 42px;">
+                                    <div>
+                                        <apex:commandLink onclick="openLoadingdialog();" rerender="error,objectiveInfoPanel" action="{!objectiveInfo}" oncomplete="destroyLoadingDialog(),objectiveInformation();" value="{!currentObjectivesMap[objectiveId].Name}">
+                                            <apex:param name="objectiveId" value="{!objectiveId}" assignTo="{!objectiveIdClicked}"/>
+                                        </apex:commandLink>
+                                    </div>
+                                    <div>
+                                        <apex:outputText value="{!currentObjectivesMap[objectiveId].Channel__c}"/>
+                                    </div>
+                                    <div class="objective-list-item-buttons">
+                                        <apex:commandButton rendered="{!currentObjectivesMap[objectiveId].Enable_Add_All_Remove_All__c && displayAddButton}" onclick="addAllRemoteTask('{!selectedGrading}', '{!selectedBanerGroup}', '{!objectiveId}', '{!JSENCODE(currentObjectivesMap[objectiveId].Name)}' ,'{!currentObjectivesMap[objectiveId].Priority_KPI__c}', '{!JSENCODE(searchAccountName)}' , '{!isCalledOnCheck}');" rerender="error" styleClass="add" value="+">
+                                            <apex:param name="objectiveId" value="{!objectiveId}" assignTo="{!objectiveId}"/>
+                                        </apex:commandButton>
+                                        <apex:commandButton rendered="{!currentObjectivesMap[objectiveId].Enable_Add_All_Remove_All__c && displayAddButton}" onclick="removeAllRemoteTask('{!selectedGrading}', '{!selectedBanerGroup}', '{!objectiveId}', '{!currentObjectivesMap[objectiveId].Priority_KPI__c}', '{!JSENCODE(searchAccountName)}' );" rerender="error" styleClass="remove" value="-">
+                                            <apex:param name="objectiveId" value="{!objectiveId}" assignTo="{!objectiveId}"/>
+                                        </apex:commandButton>
+                                    </div>
+                                </div>
+                            </th>
+                        </apex:repeat>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <apex:repeat value="{!accounts}" var="acc">
+                        <tr>
+                            <apex:repeat value="{!sortedObjectivesList}" var="objId">
+                                <td class="slds-is-relative">
+                                    <div id="DispButton-{!acc.Id}-{!objId}" class="objective-list-item-buttons">
+                                        <div class="slds-form-element" style="user-select: none">
+                                            <div class="slds-form-element__control">
+                                                <div class="slds-checkbox">
+                                                    <apex:variable var="count" value="{!0}"/>
+                                                    <apex:repeat value="{!tasksMap[''+acc.Id+'#'+objId]}">
+                                                        <apex:variable var="count" value="{!count + 1}"/>
+                                                    </apex:repeat>
+                                                    <apex:variable var="dummy" value="{!0}" rendered="{!count > 0}">
+                                                        <input type="checkbox" name="options" id="checkbox-{!acc.Id}-{!objId}" value="" checked="true" onchange="this.checked ? addRemoteTask('{!acc.Id}', '{!objId}', '{!JSENCODE(currentObjectivesMap[objId].Name)}','{!currentObjectivesMap[objId].Priority_KPI__c}', '') : confirmRemoveRemoteTask('{!acc.Id}', '{!objId}');"/>
+                                                    </apex:variable>
+                                                    <apex:variable var="dummy" value="{!0}" rendered="{!count == 0}">
+                                                        <input type="checkbox" name="options" id="checkbox-{!acc.Id}-{!objId}" value="" onchange="this.checked ? addRemoteTask('{!acc.Id}', '{!objId}', '{!JSENCODE(currentObjectivesMap[objId].Name)}','{!currentObjectivesMap[objId].Priority_KPI__c}', '') : confirmRemoveRemoteTask('{!acc.Id}', '{!objId}');"/>
+                                                    </apex:variable>
+                                                    <label class="slds-checkbox__label" for="checkbox-{!acc.Id}-{!objId}">
+                                                        <span class="slds-checkbox_faux"></span>
+                                                        <span class="slds-form-element__label"></span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <ul id="TaskList-{!acc.Id}-{!objId}" style="margin-top: 0 !important;">
+                                        <apex:repeat value="{!tasksMap[''+acc.Id+'#'+objId]}" var="task">
+                                            <apex:outputText rendered="{!if(ISNULL(task.Id), false, true)}">
+                                                <li id="Task-{!acc.Id}-{!objId}-{!task.Id}">
+                                                    <a style="color:{!IF(AND(task.ActivityDate < todaysDate, task.Status != 'Executed'),'red',IF(task.Status == 'Re- Allocated','Green',if(contains(task.Status,'Executed'),'blue','black')))};font-weight:bold;" target="_blank" href="/{!task.Id}">
+                                                        <apex:outputText value="{!task.Status}"/>
+                                                    </a>
+                                                </li>
+                                            </apex:outputText>
+                                        </apex:repeat>
+                                    </ul>
+                                </td>
+                            </apex:repeat>
+                        </tr>
+                    </apex:repeat>
+                    <tr>
+                        <td colspan="{!sortedObjectivesList.size}">
+                            <div class="slds-align_absolute-center">
+                                <apex:commandButton styleClass="slds-button slds-button--neutral" value="Save Objective Statistics" action="{!saveStats}" reRender="PlanningGrid,error" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();"/>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <apex:repeat value="{!sortedObjectivesList}" var="objectiveId">
+                            <td>
+                                <div>
+                                    Target:&nbsp; <apex:inputField value="{!statsMap[objectiveId].Total_Allocation__c}" styleClass="slds-input" style="width:100px"/>
+                                </div>
+                                <div>
+                                    Allocated: {!allocatedStats[objectiveId]}
+                                </div>
+                                <div>
+                                    Pending: {!pendingStats[objectiveId]}
+                                </div>
+                                <div>
+                                    Executed: {!executedStats[objectiveId]}
+                                </div>
+                                <div>
+                                    Declined: {!declinedStats[objectiveId]}
+                                </div>
+                            </td>
+                        </apex:repeat>
+                    </tr>
+                    </tbody>
+                </table>
+                </div>
+            </apex:outputPanel>
+
+            <apex:outputPanel id="totalCallsRowPanel">
+                <apex:outputPanel id="pagination" rendered="{!displayResults}" styleClass="slds-m-top--small" layout="block">
+                    <div class="slds-grid slds-grid--align-spread">
+                        <div>
+                            <b>Page:</b>
+                            <br/>
+                            {!setCon.PageNumber} of {!totalPages}
+                        </div>
+                        <div>
+                            <apex:commandButton value="|<" action="{!first}" disabled="{!Not(setCon.HasPrevious)}" rerender="PlanningGrid,pagination,totalCallsRowPanel" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();" styleClass="slds-button slds-button--neutral"/>
+                            <apex:commandButton value="<" action="{!previous}" disabled="{!Not(setCon.HasPrevious)}" rerender="PlanningGrid,pagination,totalCallsRowPanel" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();" styleClass="slds-button slds-button--neutral"/>
+                            <apex:commandButton value=">" action="{!next}" disabled="{!Not(setCon.HasNext)}" rerender="PlanningGrid,pagination,totalCallsRowPanel" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();" styleClass="slds-button slds-button--neutral"/>
+                            <apex:commandButton value=">|" action="{!last}" disabled="{!Not(setCon.HasNext)}" rerender="PlanningGrid,pagination,totalCallsRowPanel" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();" styleClass="slds-button slds-button--neutral"/>
+                        </div>
+                        <div>
+                            <b>Page:</b>
+                            <br/>
+                            {!setCon.PageNumber} of {!totalPages}
+                        </div>
+                    </div>
+                </apex:outputPanel>
+            </apex:outputPanel>
+
+            <div class="modal" id="objective-information-modal" style="display: none">
+                <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container">
+                        <header class="slds-modal__header">
+                            <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse close-button" title="Close">
+                                <svg class="slds-button__icon slds-button__icon_large" aria-hidden="true">
+                                    <use xlink:href="/apexpages/slds/latest/assets/icons/utility-sprite/svg/symbols.svg#close"></use>
+                                </svg>
+                                <span class="slds-assistive-text">Close</span>
+                            </button>
+                            <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Objective Information</h2>
+                        </header>
+                        <apex:outputPanel layout="block" id="objectiveInfoPanel">
+                            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                <table>
+                                    <tr style="display:{!IF( objectiveInformation.Start_Date__c == null , 'None', '')}">
+                                        <td>Objective Start Date:</td>
+                                        <td>
+                                            <apex:outputText value="{0,date,dd'/'MM'/'yyyy}" id="startDate">
+                                                <apex:param value="{!objectiveInformation.Start_Date__c}"/>
+                                            </apex:outputText>
+                                        </td>
+                                    </tr>
+
+                                    <tr style="display:{!IF( objectiveInformation.End_Date__c == null , 'None', '')}">
+                                        <td>Objective End Date:</td>
+                                        <td>
+                                            <apex:outputText value="{0,date,dd'/'MM'/'yyyy}" id="endDate">
+                                                <apex:param value="{!objectiveInformation.End_Date__c}"/>
+                                            </apex:outputText>
+                                        </td>
+                                    </tr>
+                                    <tr style="display:{!IF( objectiveInformation.Type_of_Objective__c == null , 'None', '')}">
+                                        <td>Type of Objective:</td>
+                                        <td>
+                                            <apex:OutputText value="{!objectiveInformation.Type_of_Objective__c}" id="typeofobjective"/>
+                                        </td>
+                                    </tr>
+                                    <tr style="display:{!IF( objectiveInformation.Priority_KPI__c == null , 'None', '')}">
+                                        <td>Priority KPI:</td>
+                                        <td>
+                                            <apex:OutputText value="{!objectiveInformation.Priority_KPI__c}" id="prioritykpi"/>
+                                        </td>
+                                    </tr>
+                                    <tr style="display:{!IF( objectiveInformation.Region__c == null , 'None', '')}">
+                                        <td>Region:</td>
+                                        <td>
+                                            <apex:OutputText value="{!objectiveInformation.Region__c}" id="region"/>
+                                        </td>
+                                    </tr>
+                                    <tr style="display:{!IF( objectiveInformation.Execution_Standard__c == null , 'None', '')}">
+                                        <td>Execution Standard:</td>
+                                        <td>
+                                            <apex:OutputText value="{!objectiveInformation.Execution_Standard__c}" id="executionstandard"/>
+                                        </td>
+                                    </tr>
+                                    <tr style="display:{!IF( objectiveInformation.Support_Deal__c == null , 'None', '')}">
+                                        <td>Support Deal:</td>
+                                        <td>
+                                            <apex:OutputText value="{!objectiveInformation.Support_Deal__c}" id="supportdeal"/>
+                                        </td>
+                                    </tr>
+                                    <tr style="display:{!IF( objectiveInformation.Category_of_Objective__c == null , 'None', '')}">
+                                        <td>Category of Objective:</td>
+                                        <td>
+                                            <apex:OutputText value="{!objectiveInformation.Category_of_Objective__c}" id="categoryofobjective"/>
+                                        </td>
+                                    </tr>
+                                    <tr style="display:{!IF( objectiveInformation.Channel__c == null , 'None', '')}">
+                                        <td>Channel:</td>
+                                        <td>
+                                            <apex:OutputText value="{!objectiveInformation.Channel__c}" id="channel"/>
+                                        </td>
+                                    </tr>
+                                    <tr style="display:{!IF( objectiveInformation.Product_Group__c == null , 'None', '')}">
+                                        <td>Product Group :</td>
+                                        <td>
+                                            <apex:OutputText value="{!objectiveInformation.Product_Group__c}" id="productgroup"/>
+                                        </td>
+                                    </tr>
+
+                                </table>
+                            </div>
+                        </apex:outputPanel>
+                        <footer class="slds-modal__footer">
+                            <button class="slds-button slds-button_neutral close-button">Close</button>
+                        </footer>
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+            </div>
+
+            <div class="modal" id="address-modal" style="display: none">
+                <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container">
+                        <header class="slds-modal__header">
+                            <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse close-button" title="Close">
+                                <svg class="slds-button__icon slds-button__icon_large" aria-hidden="true">
+                                    <use xlink:href="/apexpages/slds/latest/assets/icons/utility-sprite/svg/symbols.svg#close"></use>
+                                </svg>
+                                <span class="slds-assistive-text">Close</span>
+                            </button>
+                            <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Address Information</h2>
+                        </header>
+                        <apex:outputPanel layout="block" id="addressPanel">
+                            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                <table>
+                                    <tr>
+                                        <td><b>Name: </b></td>
+                                        <td>
+                                            <b>
+                                                <apex:OutputText value="{!AccAddress.Name}" id="AccountName"/>
+                                            </b>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Billing Street :</td>
+                                        <td>
+                                            <apex:OutputText value="{!AccAddress.BillingStreet}" id="billingStreet"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Billing City:</td>
+                                        <td>
+                                            <apex:OutputText value="{!AccAddress.BillingCity}" id="billingCity"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Billing State/Province:</td>
+                                        <td>
+                                            <apex:OutputText value="{!AccAddress.BillingState}" id="BillingState"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Billing Zip/Postal Code:</td>
+                                        <td>
+                                            <apex:OutputText value="{!AccAddress.BillingPostalCode}" id="BillingPostCode"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Billing Country:</td>
+                                        <td>
+                                            <apex:OutputText value="{!AccAddress.BillingCountry}" id="BillingCountry"/>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </apex:outputPanel>
+                        <footer class="slds-modal__footer">
+                            <button class="slds-button slds-button_neutral close-button">Close</button>
+                        </footer>
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+            </div>
+
+            <div class="modal" id="confirm-modal" style="display: none">
+                <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container">
+                        <header class="slds-modal__header">
+                            <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" onclick="handleDecline()" title="Close">
+                                <svg class="slds-button__icon slds-button__icon_large" aria-hidden="true">
+                                    <use xlink:href="/apexpages/slds/latest/assets/icons/utility-sprite/svg/symbols.svg#close"></use>
+                                </svg>
+                                <span class="slds-assistive-text">Close</span>
+                            </button>
+                            <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Confirm action</h2>
+                        </header>
+                        <apex:outputPanel layout="block" id="confirmPanel">
+                            <div class="slds-modal__content slds-p-around_medium slds-align_absolute-center" id="modal-content-id-1">
+                                Are you sure you want to delete the Objective?
+                            </div>
+                        </apex:outputPanel>
+                        <footer class="slds-modal__footer">
+                            <button class="slds-button slds-button_neutral" onclick="handleDecline()">No</button>
+                            <button class="slds-button slds-button_brand" onclick="handleConfirm()">Yes</button>
+                        </footer>
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+            </div>
+
+            <!--<apex:variable value="{!1}" var="columnCount"/>-->
+            <!--<apex:outputPanel id="PlanningGrid0" rendered="true">-->
+                <!--<apex:outputPanel id="PlanningGrid1" rendered="{!displayResults}">-->
+                    <!--&lt;!&ndash;<table cellspacing="0" cellpadding="0" id="PlanningTable" class="allBorder" style="width:100%">&ndash;&gt;-->
+                    <!--<table cellspacing="0" cellpadding="0" id="PlanningTable" class="allBorder">-->
+                        <!--<thead>-->
+                        <!--<tr>-->
+                            <!--<th id="outlet" class="PTheaderColumn tdHeaderLabel">-->
+                                <!--<apex:commandLink value="Outlet" action="{!sortAccount}" id="outletSort1" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();" styleClass="sorttablelinks" rerender="PlanningGrid,error,totalCallsRowPanel">-->
+                                    <!--<apex:param name="currentSortField" value="Outlet" assignTo="{!currentSortField}"/>-->
+                                <!--</apex:commandLink>-->
+                            <!--</th>-->
+
+                            <!--<apex:outputText rendered="{!bannerGrpFlag}">-->
+                                <!--<th id="bannerGroup" class="PTheaderColumn tdHeaderLabel">-->
+                                    <!--<apex:variable var="columnCount" value="{!columnCount + 1}"/>-->
+                                    <!--<apex:commandLink value="Banner Group" action="{!sortAccount}" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();" id="bannerGroupSort" styleClass="sorttablelinks" rerender="PlanningGrid,error,totalCallsRowPanel">-->
+                                        <!--<apex:param name="currentSortField" value="BannerGroup" assignTo="{!currentSortField}"/>-->
+                                    <!--</apex:commandLink>-->
+                                <!--</th>-->
+                            <!--</apex:outputText>-->
+
+                            <!--<apex:outputText rendered="{!cityFlag}">-->
+                                <!--<th id="suburb" class="PTheaderColumn tdHeaderLabel">-->
+                                    <!--<apex:variable var="columnCount" value="{!columnCount + 1}"/>-->
+                                    <!--<apex:commandLink value="City" action="{!sortAccount}" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();" id="suburbSort" styleClass="sorttablelinks" rerender="PlanningGrid,error,totalCallsRowPanel">-->
+                                        <!--<apex:param name="currentSortField" value="City" assignTo="{!currentSortField}"/>-->
+                                    <!--</apex:commandLink>-->
+                                <!--</th>-->
+                            <!--</apex:outputText>-->
+
+                            <!--<apex:outputText rendered="{!postCodeFlag}">-->
+                                <!--<apex:variable var="columnCount" value="{!columnCount + 1}"/>-->
+                                <!--<th id="postcode" class="PTheaderColumn tdHeaderLabel">-->
+                                    <!--<apex:commandLink value="Post Code" action="{!sortAccount}" id="postCodeSort" onclick="openLoadingdialog();" styleClass="sorttablelinks" rerender="PlanningGrid,totalCallsRowPanel,error" oncomplete="destroyLoadingDialog();">-->
+                                        <!--<apex:param name="currentSortField" value="postCode" assignTo="{!currentSortField}"/>-->
+                                    <!--</apex:commandLink>-->
+                                <!--</th>-->
+                            <!--</apex:outputText>-->
+
+                            <!--<apex:outputText rendered="{!volumeFlag}">-->
+                                <!--<apex:variable var="columnCount" value="{!columnCount + 1}"/>-->
+                                <!--<th id="Volume" class="PTheaderColumn tdHeaderLabel">-->
+                                    <!--<apex:commandLink value="Volume (9LE - Current Year)" action="{!sortAccount}" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();" id="VolumeSort" styleClass="sorttablelinks" rerender="PlanningGrid,error,totalCallsRowPanel">-->
+                                        <!--<apex:param name="currentSortField" value="Volume" assignTo="{!currentSortField}"/>-->
+                                    <!--</apex:commandLink>-->
+                                <!--</th>-->
+                            <!--</apex:outputText>-->
+
+                            <!--<apex:outputText rendered="{!gradingFlag}">-->
+                                <!--<apex:variable var="columnCount" value="{!columnCount + 1}"/>-->
+                                <!--<th id="Grading" class="PTheaderColumn tdHeaderLabel">-->
+                                    <!--<apex:commandLink value="Grading" action="{!sortAccount}" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();" id="GradingSort" styleClass="sorttablelinks" rerender="PlanningGrid,error,totalCallsRowPanel">-->
+                                        <!--<apex:param name="currentSortField" value="Grading" assignTo="{!currentSortField}"/>-->
+                                    <!--</apex:commandLink>-->
+                                <!--</th>-->
+                            <!--</apex:outputText>-->
+
+                            <!--<apex:repeat value="{!sortedObjectivesList}" var="objectiveId">-->
+                                <!--<th id="{!objectiveId}" class="PTheaderColumn tdRedHeaders">-->
+                                    <!--<div style="float:right;vertical-align:top;margin-top:0;padding-right:3px;">-->
+                                        <!--<apex:commandButton rendered="{!currentObjectivesMap[objectiveId].Enable_Add_All_Remove_All__c && displayAddButton}"-->
+                                            <!--onclick="addAllRemoteTask('{!selectedGrading}', '{!selectedBanerGroup}', '{!objectiveId}', '{!JSENCODE(currentObjectivesMap[objectiveId].Name)}' ,'{!currentObjectivesMap[objectiveId].Priority_KPI__c}', '{!JSENCODE(searchAccountName)}' , '{!isCalledOnCheck}');"-->
+                                            <!--image="{!$Resource.CreateTaskIcon}"-->
+                                            <!--rerender="error"-->
+                                            <!--styleClass="iconButton PlanningTablebtn"-->
+                                            <!--style="background-color:rgb(198,12,48) !important"-->
+                                        <!--&gt;-->
+                                            <!--<apex:param name="objectiveId" value="{!objectiveId}" assignTo="{!objectiveId}"/>-->
+                                        <!--</apex:commandButton>-->
+                                        <!--<apex:commandButton rendered="{!currentObjectivesMap[objectiveId].Enable_Add_All_Remove_All__c && displayAddButton}"-->
+                                            <!--onclick="removeAllRemoteTask('{!selectedGrading}', '{!selectedBanerGroup}', '{!objectiveId}', '{!currentObjectivesMap[objectiveId].Priority_KPI__c}', '{!JSENCODE(searchAccountName)}' );"-->
+                                            <!--image="{!$Resource.DeleteTaskIcon}"-->
+                                            <!--rerender="error"-->
+                                            <!--styleClass="iconButton PlanningTablebtn"-->
+                                            <!--style="background-color:rgb(198,12,48) !important"-->
+                                        <!--&gt;-->
+                                            <!--<apex:param name="objectiveId" value="{!objectiveId}" assignTo="{!objectiveId}"/>-->
+                                        <!--</apex:commandButton>-->
+                                    <!--</div>-->
+                                    <!--<div style="text-align:left;margin-top:0;width:120px;padding:2px;" class="wordwrap">-->
+                                        <!--<apex:commandLink style="color:white" onclick="openLoadingdialog();" rerender="error,objectiveInfoPanel" action="{!objectiveInfo}" oncomplete="destroyLoadingDialog(),objectiveInformation();" value="{!currentObjectivesMap[objectiveId].Name}">-->
+                                            <!--<apex:param name="objectiveId" value="{!objectiveId}" assignTo="{!objectiveIdClicked}"/>-->
+                                        <!--</apex:commandLink>-->
+                                    <!--</div>-->
+
+                                <!--</th>-->
+                                <!--<apex:variable var="columnCount" value="{!columnCount + 1}"/>-->
+                            <!--</apex:repeat>-->
+                        <!--</tr>-->
+                        <!--<tr>-->
+                            <!--<th id="outletChannle1" class="PTheaderColumn tdHeaderLabel">-->
+                            <!--</th>-->
+                            <!--<apex:outputText rendered="{!bannerGrpFlag}">-->
+                                <!--<th id="outletChannle2" class="PTheaderColumn tdHeaderLabel">-->
+                                <!--</th>-->
+                            <!--</apex:outputText>-->
+                            <!--<apex:outputText rendered="{!cityFlag}">-->
+                                <!--<th id="outletChannle3" class="PTheaderColumn tdHeaderLabel">-->
+                                <!--</th>-->
+                            <!--</apex:outputText>-->
+                            <!--<apex:outputText rendered="{!postCodeFlag}">-->
+                                <!--<th id="outletChannle4" class="PTheaderColumn tdHeaderLabel">-->
+                                <!--</th>-->
+                            <!--</apex:outputText>-->
+                            <!--<apex:outputText rendered="{!volumeFlag}">-->
+                                <!--<th id="outletChannle5" class="PTheaderColumn tdHeaderLabel">-->
+                                <!--</th>-->
+                            <!--</apex:outputText>-->
+                            <!--<apex:outputText rendered="{!gradingFlag}">-->
+                                <!--<th id="outletChannle5" class="PTheaderColumn tdHeaderLabel">-->
+                                <!--</th>-->
+                            <!--</apex:outputText>-->
+                            <!--<apex:repeat value="{!sortedObjectivesList}" var="objectiveId">-->
+                                <!--<th class="PTheaderColumn tdRedHeaders">-->
+                                    <!--<div style="text-align:left;margin-top:0;width:120px;padding:2px;" class="wordwrap">-->
+                                        <!--<apex:outputText style="color:white" value="{!currentObjectivesMap[objectiveId].Channel__c}"/>-->
+                                    <!--</div>-->
+                                <!--</th>-->
+                            <!--</apex:repeat>-->
+                        <!--</tr>-->
+                        <!--</thead>-->
+
+                        <!--<tbody>-->
+                        <!--<apex:repeat value="{!accounts}" var="acc">-->
+                            <!--<tr>-->
+                                <!--<th class="tdData PlanningTabletd">-->
+                                    <!--<div style="float:right;vertical-align:top;margin-top:0;width:100%;">-->
+                                        <!--<apex:commandButton style="padding:0px !important;height:16px;width:16px;border:0px !important;float:right;" image="{!$Resource.Address}" onclick="openLoadingdialog();" rerender="error,addressPanel" action="{!addressInfo}" oncomplete="destroyLoadingDialog(),addressInformation();">-->
+                                            <!--<apex:param name="accAddressId" value="{!acc.Id}" assignTo="{!accAddressId}"/>-->
+                                        <!--</apex:commandButton>-->
+                                    <!--</div>-->
+                                    <!--<apex:outputlink style="vertical-align:middle" styleClass="outletNameLink" target="_blank" value="/{!acc.Id}">-->
+                                        <!--<apex:outputText value="{!acc.Name}" style="text-wrap:none"/>-->
+                                    <!--</apex:outputlink>-->
+
+                                <!--</th>-->
+                                <!--<apex:outputText rendered="{!bannerGrpFlag}">-->
+                                    <!--<td style="vertical-align:middle" class="tdData PlanningTabletd">-->
+                                               <!--{!acc.Banner_Group_Name__c}-->
+                                            <!--</td>-->
+                                <!--</apex:outputText>-->
+                                <!--<apex:outputText rendered="{!cityFlag}">-->
+                                    <!--<td style="vertical-align:middle" class="tdData PlanningTabletd">-->
+                                               <!--{!acc.BillingCity}-->
+                                           <!--</td>-->
+                                <!--</apex:outputText>-->
+                                <!--<apex:outputText rendered="{!postCodeFlag}">-->
+                                    <!--<td style="vertical-align:middle" class="tdData PlanningTabletd">-->
+                                               <!--{!acc.BillingPostalCode}-->
+                                            <!--</td>-->
+                                <!--</apex:outputText>-->
+                                <!--<apex:outputText rendered="{!volumeFlag}">-->
+                                    <!--<td style="vertical-align:middle" class="tdData PlanningTabletd">-->
+                                               <!--{!acc.Volume__c}-->
+                                            <!--</td>-->
+                                <!--</apex:outputText>-->
+                                <!--<apex:outputText rendered="{!gradingFlag}">-->
+                                    <!--<td style="vertical-align:middle" class="tdData PlanningTabletd">-->
+                                                 <!--{!acc.Account_Grading__c}-->
+                                            <!--</td>-->
+                                <!--</apex:outputText>-->
+
+                                <!--<apex:repeat value="{!sortedObjectivesList}" var="objId">-->
+                                    <!--<td class="PlanningTabletd">-->
+                                        <!--<div id="DispButton-{!acc.Id}-{!objId}" style="float:right;vertical-align:top;margin-top:0;">-->
+                                            <!--<apex:commandButton rendered="{!displayAddButton}" onclick="addRemoteTask('{!acc.Id}', '{!objId}', '{!JSENCODE(currentObjectivesMap[objId].Name)}','{!currentObjectivesMap[objId].Priority_KPI__c}', '');" image="{!$Resource.CreateTaskIcon}" styleClass="iconButton PlanningTablebtn" style="background-color:white"/>-->
+                                            <!--<apex:commandButton rendered="{!displayAddButton}" onclick="removeRemoteTask('{!acc.Id}', '{!objId}');" image="{!$Resource.DeleteTaskIcon}" styleClass="iconButton PlanningTablebtn" style="background-color:white"/>-->
+                                        <!--</div>-->
+                                        <!--<apex:outputText rendered="{!displayAddButton}"><br/></apex:outputText>-->
+
+                                        <!--<ul id="TaskList-{!acc.Id}-{!objId}">-->
+                                            <!--<apex:repeat value="{!tasksMap[''+acc.Id+'#'+objId]}" var="task">-->
+                                                <!--<apex:outputText rendered="{!if(ISNULL(task.Id), false, true)}">-->
+                                                    <!--<li id="Task-{!acc.Id}-{!objId}-{!task.Id}">-->
+                                                        <!--<a style="color:{!IF(AND(task.ActivityDate < todaysDate, task.Status != 'Executed'),'red',IF(task.Status == 'Re- Allocated','Green',if(contains(task.Status,'Executed'),'blue','black')))};font-weight:bold;" target="_blank" href="/{!task.Id}">-->
+                                                            <!--<apex:outputText value="{!task.Status}"/>-->
+                                                        <!--</a>-->
+                                                    <!--</li>-->
+                                                <!--</apex:outputText>-->
+                                            <!--</apex:repeat>-->
+                                        <!--</ul>-->
+                                    <!--</td>-->
+                                <!--</apex:repeat>-->
+                            <!--</tr>-->
+                        <!--</apex:repeat>-->
+                        <!--<tr>-->
+                            <!--<th style="height: 30px;" class="PlanningTabletd"></th>-->
+                            <!--<td style="height: 30px;" colspan="{!FLOOR(columnCount)-1}" class="PlanningTabletd">-->
+                                <!--<div style="text-align:center;">-->
+                                    <!--<apex:commandButton value="    Save Objective Statistics    " action="{!saveStats}" reRender="PlanningGrid,error" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();"/>&nbsp;&nbsp;-->
+                                <!--</div>-->
+                            <!--</td>-->
+                        <!--</tr>-->
+                        <!--<tr>-->
+                            <!--<apex:outputText rendered="{!bannerGrpFlag}">-->
+                                <!--<td style="height: 30px;" class="PlanningTabletd"></td>-->
+                            <!--</apex:outputText>-->
+                            <!--<apex:outputText rendered="{!cityFlag}">-->
+                                <!--<td style="height: 30px;" class="PlanningTabletd"></td>-->
+                            <!--</apex:outputText>-->
+                            <!--<apex:outputText rendered="{!volumeFlag}">-->
+                                <!--<td style="height: 30px;" class="PlanningTabletd"></td>-->
+                            <!--</apex:outputText>-->
+                            <!--<apex:outputText rendered="{!gradingFlag}">-->
+                                <!--<td style="height: 30px;" class="PlanningTabletd"></td>-->
+                            <!--</apex:outputText>-->
+                            <!--<apex:outputText rendered="{!postCodeFlag}">-->
+                                <!--<td style="height: 30px;" class="PlanningTabletd"></td>-->
+                            <!--</apex:outputText>-->
+                            <!--<td style="height: 30px;" class="PlanningTabletd">Total Objectives Assigned</td>-->
+                            <!--<apex:repeat value="{!sortedObjectivesList}" var="objectiveId">-->
+                                <!--<td id="TaskAssigned-{!objectiveId}" style="height: 30px;" class="PlanningTabletd">-->
+                                    <!--<apex:inputField value="{!statsMap[objectiveId].Total_Allocation__c}"/>-->
+                                <!--</td>-->
+                            <!--</apex:repeat>-->
+                        <!--</tr>-->
+
+                        <!--<tr>-->
+                            <!--<apex:outputText rendered="{!bannerGrpFlag}">-->
+                                <!--<td style="height: 30px;" class="PlanningTabletd"></td>-->
+                            <!--</apex:outputText>-->
+                            <!--<apex:outputText rendered="{!cityFlag}">-->
+                                <!--<td style="height: 30px;" class="PlanningTabletd"></td>-->
+                            <!--</apex:outputText>-->
+                            <!--<apex:outputText rendered="{!volumeFlag}">-->
+                                <!--<td style="height: 30px;" class="PlanningTabletd"></td>-->
+                            <!--</apex:outputText>-->
+                            <!--<apex:outputText rendered="{!gradingFlag}">-->
+                                <!--<td style="height: 30px;" class="PlanningTabletd"></td>-->
+                            <!--</apex:outputText>-->
+                            <!--<apex:outputText rendered="{!postCodeFlag}">-->
+                                <!--<td style="height: 30px;" class="PlanningTabletd"></td>-->
+                            <!--</apex:outputText>-->
+                            <!--<td style="height: 30px;" class="PlanningTabletd">Total Objectives Allocated &amp; Pending</td>-->
+                            <!--<apex:repeat value="{!sortedObjectivesList}" var="objectiveId">-->
+                                <!--<td id="TaskAllocation-{!objectiveId}" style="height: 30px;" class="PlanningTabletd">{!noOfObjAllocReallocPending[objectiveId]}</td>-->
+                            <!--</apex:repeat>-->
+                        <!--</tr>-->
+
+                        <!--<tr>-->
+                            <!--<apex:outputText rendered="{!bannerGrpFlag}">-->
+                                <!--<td style="height: 30px;" class="PlanningTabletd"></td>-->
+                            <!--</apex:outputText>-->
+                            <!--<apex:outputText rendered="{!cityFlag}">-->
+                                <!--<td style="height: 30px;" class="PlanningTabletd"></td>-->
+                            <!--</apex:outputText>-->
+                            <!--<apex:outputText rendered="{!volumeFlag}">-->
+                                <!--<td style="height: 30px;" class="PlanningTabletd"></td>-->
+                            <!--</apex:outputText>-->
+                            <!--<apex:outputText rendered="{!gradingFlag}">-->
+                                <!--<td style="height: 30px;" class="PlanningTabletd"></td>-->
+                            <!--</apex:outputText>-->
+                            <!--<apex:outputText rendered="{!postCodeFlag}">-->
+                                <!--<td style="height: 30px;" class="PlanningTabletd"></td>-->
+                            <!--</apex:outputText>-->
+                            <!--<td style="height: 30px;" class="PlanningTabletd">Total Objectives Executed</td>-->
+                            <!--<apex:repeat value="{!sortedObjectivesList}" var="objectiveId">-->
+                                <!--<td style="height: 30px;" class="PlanningTabletd">{!noOfObjExecuted[objectiveId]}</td>-->
+                            <!--</apex:repeat>-->
+                        <!--</tr>-->
+
+                        <!--<tr>-->
+                            <!--<apex:outputText rendered="{!bannerGrpFlag}">-->
+                                <!--<td style="height: 30px;" class="PlanningTabletd"></td>-->
+                            <!--</apex:outputText>-->
+                            <!--<apex:outputText rendered="{!cityFlag}">-->
+                                <!--<td style="height: 30px;" class="PlanningTabletd"></td>-->
+                            <!--</apex:outputText>-->
+                            <!--<apex:outputText rendered="{!volumeFlag}">-->
+                                <!--<td style="height: 30px;" class="PlanningTabletd"></td>-->
+                            <!--</apex:outputText>-->
+                            <!--<apex:outputText rendered="{!gradingFlag}">-->
+                                <!--<td style="height: 30px;" class="PlanningTabletd"></td>-->
+                            <!--</apex:outputText>-->
+                            <!--<apex:outputText rendered="{!postCodeFlag}">-->
+                                <!--<td style="height: 30px;" class="PlanningTabletd"></td>-->
+                            <!--</apex:outputText>-->
+                            <!--<td style="height: 30px;" class="PlanningTabletd">Total Objectives Remaining</td>-->
+                            <!--<apex:repeat value="{!sortedObjectivesList}" var="objectiveId">-->
+                                <!--<td id="TaskRemaining-{!objectiveId}" style="height: 30px;" class="PlanningTabletd">{!noOfObjRemaining[objectiveId]}</td>-->
+                            <!--</apex:repeat>-->
+                        <!--</tr>-->
+
+                        <!--</tbody>-->
+                    <!--</table>-->
+                    <!--<script type="text/javascript">-->
+                        <!--var $ = jQuery.noConflict();-->
+                        <!--$('#PlanningTable').tinytbl({-->
+                            <!--direction: 'ltr',-->
+                            <!--thead: true,-->
+                            <!--tfoot: false,-->
+                            <!--cols: 1,-->
+                            <!--width: window.innerWidth - 50,-->
+                            <!--height: {!if (setCon.ResultSize >= 4, 500,if (setCon.ResultSize = 3, 445, (if (setCon.ResultSize = 2, 375,if (setCon.ResultSize = 1, 305, 240)))))},-->
+                        <!--renderer:  true-->
+                        <!--})-->
+                        <!--;-->
+                    <!--</script>-->
+                <!--</apex:outputPanel>-->
+            <!--</apex:outputPanel>-->
+            <!--<br/>-->
+            <!--<apex:outputPanel id="totalCallsRowPanel">-->
+            <!--<table cellspacing="0" cellpadding="0" id="totalCallsRow"  class="windowWidth">-->
+            <!--<apex:outputText rendered="{!totalPages > 1}">-->
+            <!--<tr>-->
+            <!--<td colspan="{!FLOOR(columnCount)}">-->
+            <!--<apex:outputPanel id="pagination" rendered="{!displayResults}">-->
+            <!--<div style="float:left;width:10%;white-space: nowrap;"> <b>Page:</b><br/>{!setCon.PageNumber} of {!totalPages}</div>-->
+            <!--<div style="text-align:center;width:90%;">-->
+            <!--<apex:commandButton value="  |<  " action="{!first}" disabled="{!Not(setCon.HasPrevious)}" rerender="PlanningGrid,pagination,totalCallsRowPanel" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();"/> &nbsp;-->
+            <!--<apex:commandButton value="  <  " action="{!previous}" disabled="{!Not(setCon.HasPrevious)}" rerender="PlanningGrid,pagination,totalCallsRowPanel" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();"/>  &nbsp;-->
+            <!--<apex:commandButton value="  >  " action="{!next}" disabled="{!Not(setCon.HasNext)}" rerender="PlanningGrid,pagination,totalCallsRowPanel" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();"/>  &nbsp;-->
+            <!--<apex:commandButton value="  >|  " action="{!last}" disabled="{!Not(setCon.HasNext)}" rerender="PlanningGrid,pagination,totalCallsRowPanel" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();"/>-->
+            <!--</div>-->
+            <!--<div style="float:right;width:10%px;white-space: nowrap;"><b>Page:</b><br/>{!setCon.PageNumber} of {!totalPages}</div>-->
+            <!--</apex:outputPanel>-->
+            <!--</td>-->
+            <!--</tr>-->
+            <!--</apex:outputText>-->
+            <!--</table>-->
+            <!--</apex:outputPanel>-->
+            <!--<table class="windowWidth">-->
+            <!--<tr>-->
+            <!--<td colspan="{!FLOOR(columnCount)}">-->
+            <!--<div style="text-align:center;">-->
+            <!--&lt;!&ndash;    <input type="button" name="Export" value="Export To Excel " onclick="callExport();" class="btn"/>&nbsp;&nbsp; &ndash;&gt;-->
+            <!--<input type="button" name="Export1" value="Export All Outlets" onclick="callExport();" class="btn"/>&nbsp;&nbsp;-->
+            <!--<input type="button" name="Export" value="Export Outlets with Objectives" onclick="callExportForOutlet();" class="btn"/>&nbsp;&nbsp;-->
+
+
+            <!--<apex:commandButton value="Send email to Manager" action="{!sentMailToManager}" onclick="openLoadingdialog();" oncomplete="destroyLoadingDialog();" rerender="error"/>&nbsp;&nbsp;-->
+            <!--</div>-->
+            <!--</td>-->
+            <!--</tr>-->
+            <!--</table>-->
+            <!--<br/>-->
+            <!--<apex:outputPanel id="addressPanel1" style="display: none">-->
+                <!--<div id="addressDialog" title="Address Information" style="color: white;">-->
+                    <!--&lt;!&ndash;<table>&ndash;&gt;-->
+                        <!--&lt;!&ndash;<tr>&ndash;&gt;-->
+                            <!--&lt;!&ndash;<td><b>Name: </b></td>&ndash;&gt;-->
+                            <!--&lt;!&ndash;<td><b>&ndash;&gt;-->
+                                    <!--&lt;!&ndash;<apex:OutputText value="{!AccAddress.Name}" id="AccountName"/>&ndash;&gt;-->
+                                <!--&lt;!&ndash;</b></td>&ndash;&gt;-->
+                        <!--&lt;!&ndash;</tr>&ndash;&gt;-->
+                        <!--&lt;!&ndash;<tr>&ndash;&gt;-->
+                            <!--&lt;!&ndash;<td>Billing Street :</td>&ndash;&gt;-->
+                            <!--&lt;!&ndash;<td>&ndash;&gt;-->
+                                <!--&lt;!&ndash;<apex:OutputText value="{!AccAddress.BillingStreet}" id="billingStreet"/>&ndash;&gt;-->
+                            <!--&lt;!&ndash;</td>&ndash;&gt;-->
+                        <!--&lt;!&ndash;</tr>&ndash;&gt;-->
+                        <!--&lt;!&ndash;<tr>&ndash;&gt;-->
+                            <!--&lt;!&ndash;<td>Billing City:</td>&ndash;&gt;-->
+                            <!--&lt;!&ndash;<td>&ndash;&gt;-->
+                                <!--&lt;!&ndash;<apex:OutputText value="{!AccAddress.BillingCity}" id="billingCity"/>&ndash;&gt;-->
+                            <!--&lt;!&ndash;</td>&ndash;&gt;-->
+                        <!--&lt;!&ndash;</tr>&ndash;&gt;-->
+                        <!--&lt;!&ndash;<tr>&ndash;&gt;-->
+                            <!--&lt;!&ndash;<td>Billing State/Province:</td>&ndash;&gt;-->
+                            <!--&lt;!&ndash;<td>&ndash;&gt;-->
+                                <!--&lt;!&ndash;<apex:OutputText value="{!AccAddress.BillingState}" id="BillingState"/>&ndash;&gt;-->
+                            <!--&lt;!&ndash;</td>&ndash;&gt;-->
+                        <!--&lt;!&ndash;</tr>&ndash;&gt;-->
+                        <!--&lt;!&ndash;<tr>&ndash;&gt;-->
+                            <!--&lt;!&ndash;<td>Billing Zip/Postal Code:</td>&ndash;&gt;-->
+                            <!--&lt;!&ndash;<td>&ndash;&gt;-->
+                                <!--&lt;!&ndash;<apex:OutputText value="{!AccAddress.BillingPostalCode}" id="BillingPostCode"/>&ndash;&gt;-->
+                            <!--&lt;!&ndash;</td>&ndash;&gt;-->
+                        <!--&lt;!&ndash;</tr>&ndash;&gt;-->
+                        <!--&lt;!&ndash;<tr>&ndash;&gt;-->
+                            <!--&lt;!&ndash;<td>Billing Country:</td>&ndash;&gt;-->
+                            <!--&lt;!&ndash;<td>&ndash;&gt;-->
+                                <!--&lt;!&ndash;<apex:OutputText value="{!AccAddress.BillingCountry}" id="BillingCountry"/>&ndash;&gt;-->
+                            <!--&lt;!&ndash;</td>&ndash;&gt;-->
+                        <!--&lt;!&ndash;</tr>&ndash;&gt;-->
+                    <!--&lt;!&ndash;</table>&ndash;&gt;-->
+                <!--</div>-->
+            <!--</apex:outputPanel>-->
+            <!--<apex:outputPanel id="objectiveInfoPanel1" style="display: none">-->
+                <!--<div id="objectiveDialog1" title="Objective Information" style="color: white;">-->
+                    <!--&lt;!&ndash;<table>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<tr style="display:{!IF( objectiveInformation.Start_Date__c == null , 'None', '')}">&ndash;&gt;-->
+                    <!--&lt;!&ndash;<td>Objective Start Date:</td>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<td><apex:outputText value="{0,date,dd'/'MM'/'yyyy}" id="startDate">&ndash;&gt;-->
+                    <!--&lt;!&ndash;<apex:param value="{!objectiveInformation.Start_Date__c}" />&ndash;&gt;-->
+                    <!--&lt;!&ndash;</apex:outputText></td>&ndash;&gt;-->
+                    <!--&lt;!&ndash;</tr>&ndash;&gt;-->
+
+                    <!--&lt;!&ndash;<tr style="display:{!IF( objectiveInformation.End_Date__c == null , 'None', '')}">&ndash;&gt;-->
+                    <!--&lt;!&ndash;<td>Objective End Date:</td>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<td><apex:outputText value="{0,date,dd'/'MM'/'yyyy}" id="endDate">&ndash;&gt;-->
+                    <!--&lt;!&ndash;<apex:param value="{!objectiveInformation.End_Date__c}" />&ndash;&gt;-->
+                    <!--&lt;!&ndash;</apex:outputText></td>&ndash;&gt;-->
+                    <!--&lt;!&ndash;</tr>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<tr style="display:{!IF( objectiveInformation.Type_of_Objective__c == null , 'None', '')}">&ndash;&gt;-->
+                    <!--&lt;!&ndash;<td>Type of Objective:</td>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<td><apex:OutputText value="{!objectiveInformation.Type_of_Objective__c}" id="typeofobjective" /></td>&ndash;&gt;-->
+                    <!--&lt;!&ndash;</tr>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<tr style="display:{!IF( objectiveInformation.Priority_KPI__c == null , 'None', '')}">&ndash;&gt;-->
+                    <!--&lt;!&ndash;<td>Priority KPI:</td>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<td><apex:OutputText value="{!objectiveInformation.Priority_KPI__c}" id="prioritykpi" /></td>&ndash;&gt;-->
+                    <!--&lt;!&ndash;</tr>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<tr style="display:{!IF( objectiveInformation.Region__c == null , 'None', '')}">&ndash;&gt;-->
+                    <!--&lt;!&ndash;<td>Region:</td>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<td><apex:OutputText value="{!objectiveInformation.Region__c}" id="region" /></td>&ndash;&gt;-->
+                    <!--&lt;!&ndash;</tr>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<tr style="display:{!IF( objectiveInformation.Execution_Standard__c == null , 'None', '')}">&ndash;&gt;-->
+                    <!--&lt;!&ndash;<td>Execution Standard: </td>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<td><apex:OutputText value="{!objectiveInformation.Execution_Standard__c}"  id="executionstandard" /></td>&ndash;&gt;-->
+                    <!--&lt;!&ndash;</tr>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<tr style="display:{!IF( objectiveInformation.Support_Deal__c == null , 'None', '')}">&ndash;&gt;-->
+                    <!--&lt;!&ndash;<td>Support Deal:</td>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<td><apex:OutputText value="{!objectiveInformation.Support_Deal__c}" id="supportdeal" /></td>&ndash;&gt;-->
+                    <!--&lt;!&ndash;</tr>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<tr style="display:{!IF( objectiveInformation.Category_of_Objective__c == null , 'None', '')}">&ndash;&gt;-->
+                    <!--&lt;!&ndash;<td>Category of Objective:</td>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<td><apex:OutputText value="{!objectiveInformation.Category_of_Objective__c}" id="categoryofobjective" /></td>&ndash;&gt;-->
+                    <!--&lt;!&ndash;</tr>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<tr style="display:{!IF( objectiveInformation.Channel__c == null , 'None', '')}">&ndash;&gt;-->
+                    <!--&lt;!&ndash;<td>Channel:</td>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<td><apex:OutputText value="{!objectiveInformation.Channel__c}" id="channel" /></td>&ndash;&gt;-->
+                    <!--&lt;!&ndash;</tr>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<tr style="display:{!IF( objectiveInformation.Product_Group__c == null , 'None', '')}">&ndash;&gt;-->
+                    <!--&lt;!&ndash;<td>Product Group :</td>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<td><apex:OutputText value="{!objectiveInformation.Product_Group__c}" id="productgroup" /></td>&ndash;&gt;-->
+                    <!--&lt;!&ndash;</tr>&ndash;&gt;-->
+
+                    <!--&lt;!&ndash;</table>&ndash;&gt;-->
+                <!--</div>-->
+            <!--</apex:outputPanel>-->
+        </apex:form>
+    </apex:pageBlock>
+    <apex:outputPanel rendered="{!NOT(true)}" style="width:400px;margin:0px auto;">
+        <apex:pageMessages id="globalError"/>
+    </apex:outputPanel>
+    <div id="loading-message" title="Loading...." style="height:175px;">
+        <img src="{!$Resource.AjaxAnimation}"/>
+    </div>
+    <div class="slide-out-divcp">
+        <a class="handle" href="#">Content</a>
+        <B>Status:</B><br/>
+        <img src="{!$Resource.Red}" height="30px"/>&nbsp;Incomplete Task<br/>
+        <img src="{!$Resource.Black}" height="30px"/>&nbsp;Allocated, Pending &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+        <img src="{!$Resource.Green}" height="30px"/>&nbsp;Re-Allocated<br/>
+        <img src="{!$Resource.Blue}" height="30px"/>&nbsp;Executed
+    </div>
+    <script type="text/javascript">
+        var $ = jQuery.noConflict();
+        Visualforce.remoting.timeout = 120000;
+        Visualforce.remoting.buffer = false;
+
+        /*bind click events and initialize dialogs on Document ready*/
+        $(document).ready(function () {
+            /*Hide Dialog initially*/
+            $("#displayTaskInfo").hide();
+            $("#loading-message").hide();
+            $(".windowWidth").css('width', '' + (window.innerWidth - 90) + 'px');
+        });
+
+
+        function openLoadingdialog() {
+            $("#loading-message").dialog({
+                draggable: false,
+                resizable: false,
+                closeOnEscape: false,
+                open: function (event, ui) {
+                    $(".ui-dialog-titlebar-close").hide();
+                    $(".ui-dialog-titlebar").hide();
+                },
+                modal: true,
+                width: 200,
+                minHeight: 0
+            });
+        }
+
+        function addRemoteTask(accId, objectiveId, objectiveName, priorityKpi, existingTask) {
+            Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.ObjectiveManagementController.addRemoteTasks}',
+                accId, objectiveId, objectiveName, priorityKpi, existingTask,
+                function (result, event) {
+                    if (event.status) {
+                        var errorMsg = document.getElementById('errorMessages');
+                        errorMsg.innerHTML = "";
+                        var unorderListElem = document.getElementsByTagName('ul');
+                        var ulCount = unorderListElem.length;
+                        var taskElementId = 'TaskList-' + accId + '-' + objectiveId;
+                        for (var i = 0; i < ulCount; i++) {
+                            if (unorderListElem[i].id == taskElementId) {
+                                var ulValue = '';
+                                var styleColor = 'Black';
+                                for (var j = 0; j < result.length; j++) {
+                                    styleColor = 'Black';
+                                    if (result[j].Status == 'Executed') {
+                                        styleColor = 'Blue';
+                                    } else if (result[j].ActivityDate < new Date().getTime()) {
+                                        styleColor = 'Red';
+                                    } else if (result[j].Status == 'Re- Allocated') {
+                                        styleColor = 'Green';
+                                    }
+                                    ulValue = ulValue + "<li id=\"Task-" + result[j].WhatId + "-" + result[j].Objective_Id__c + "-" + result[j].Id + "\"><a style=\"color:" + styleColor + "\;font-weight:bold\;\"  target=\"_blank\" href=\"/" + result[j].Id + "\" >" + result[j].Status + "</a></li>";
+                                }
+                                unorderListElem[i].innerHTML = ulValue;
+                            }
+                        }
+
+                        i = 0;
+                        var tdElem = document.getElementsByTagName('td');
+                        var tdCount = tdElem.length;
+                        var taskCountId = 'TaskAllocation-' + objectiveId;
+
+                        for (i = 0; i < tdCount; i++) {
+                            if (tdElem[i].id == taskCountId) {
+                                tdElem[i].innerHTML = Number(tdElem[i].innerHTML) + 1;
+                            }
+                        }
+
+                        fitTableRows();
+                    } else {
+                        showErrorMessage('ERROR', event.message);
+                    }
+                }
+            );
+        }
+
+        function addAllRemoteTask(selectedGrading, selectedBanerGroup, objectiveId, objectiveName, priorityKpi, searchAccountName, isCalledOnCheck) {
+            Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.ObjectiveManagementController.addAllRemoteTasks}',
+                selectedGrading, selectedBanerGroup, objectiveId, objectiveName, priorityKpi, searchAccountName, isCalledOnCheck,
+                function (result, event) {
+                    if (event.status) {
+                        var errorMsg = document.getElementById('errorMessages');
+                        errorMsg.innerHTML = "";
+                        if (result.length > 0) {
+                            var unorderListElem = document.getElementsByTagName('ul');
+                            var ulCount = unorderListElem.length;
+                            for (var j = 0; j < result.length; j++) {
+                                var taskElementId = 'TaskList-' + result[j].WhatId + '-' + result[j].Objective_Id__c;
+                                for (var i = 0; i < ulCount; i++) {
+                                    if (unorderListElem[i].id == taskElementId) {
+                                        unorderListElem[i].innerHTML = "<li id=\"Task-" + result[j].WhatId + "-" + result[j].Objective_Id__c + "-" + result[j].Id + "\"><a style=\"color:Black\;font-weight:bold\;\"  target=\"_blank\" href=\"/" + result[j].Id + "\" >" + result[j].Status + "</a></li>";
+                                    }
+                                }
+                            }
+
+                            i = 0;
+                            var tdElem = document.getElementsByTagName('td');
+                            var tdCount = tdElem.length;
+                            var taskCountId = 'TaskAllocation-' + objectiveId;
+                            for (i = 0; i < tdCount; i++) {
+                                if (tdElem[i].id == taskCountId) {
+                                    tdElem[i].innerHTML = Number(tdElem[i].innerHTML) + result.length;
+                                }
+                            }
+
+                            fitTableRows();
+                        }
+                    } else {
+                        showErrorMessage('ERROR', event.message);
+                    }
+                }
+            );
+        }
+
+        function removeAllRemoteTask(selectedGrading, selectedBanerGroup, objectiveId, priorityKpi, searchAccountName) {
+            Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.ObjectiveManagementController.removeAllRemoteTasks}',
+                selectedGrading, selectedBanerGroup, objectiveId, priorityKpi, searchAccountName,
+                function (result, event) {
+                    if (event.status) {
+                        var errorMsg = document.getElementById('errorMessages');
+                        errorMsg.innerHTML = "";
+                        if (result.length > 0) {
+                            var i = 0;
+                            var taskElemId = '';
+                            var listElem = document.getElementsByTagName('li');
+                            var liCount = listElem.length;
+                            for (var j = 0; j < result.length; j++) {
+                                taskElemId = result[j];
+                                for (i = 0; i < liCount; i++) {
+                                    if (listElem[i].id == taskElemId) {
+                                        listElem[i].innerHTML = "";
+                                    }
+                                }
+                            }
+
+                            i = 0;
+                            var tdElem = document.getElementsByTagName('td');
+                            var tdCount = tdElem.length;
+                            var taskCountId = 'TaskAllocation-' + objectiveId;
+                            for (i = 0; i < tdCount; i++) {
+                                if (tdElem[i].id == taskCountId) {
+                                    tdElem[i].innerHTML = Number(tdElem[i].innerHTML) - result.length;
+                                }
+                            }
+
+                            fitTableRows();
+                        }
+                    } else {
+                        showErrorMessage('ERROR', event.message);
+                    }
+                }
+            );
+        }
+
+        var accId;
+        var objectiveId;
+        function confirmRemoveRemoteTask(accId, objectiveId){
+            this.accId = accId;
+            this.objectiveId = objectiveId;
+            $('#confirm-modal').css('display', 'block');
+        }
+
+        function handleConfirm(){
+            $('#confirm-modal').css('display', 'none');
+            removeRemoteTask(this.accId, this.objectiveId);
+        }
+
+        function handleDecline(){
+            $('#confirm-modal').css('display', 'none');
+            document.getElementById('checkbox-' + this.accId + '-' + this.objectiveId).checked = true;
+        }
+
+        function removeRemoteTask(accId, objectiveId) {
+            Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.ObjectiveManagementController.removeRemoteTasks}',
+                accId, objectiveId,
+                function (result, event) {
+                    if (event.status) {
+                        if (result != null) {
+                            var errorMsg = document.getElementById('errorMessages');
+                            errorMsg.innerHTML = "";
+                            var unorderListElem = document.getElementsByTagName('ul');
+                            var ulCount = unorderListElem.length;
+                            var taskElementId = 'TaskList-' + accId + '-' + objectiveId;
+                            for (var i = 0; i < ulCount; i++) {
+                                if (unorderListElem[i].id == taskElementId) {
+                                    var ulValue = '';
+                                    var styleColor = 'Black';
+                                    for (var j = 0; j < result.length; j++) {
+                                        styleColor = 'Black';
+                                        if (result[j].Status == 'Executed') {
+                                            styleColor = 'Blue';
+                                        } else if (result[j].ActivityDate < new Date().getTime()) {
+                                            styleColor = 'Red';
+                                        } else if (result[j].Status == 'Re- Allocated') {
+                                            styleColor = 'Green';
+                                        }
+                                        ulValue = ulValue + "<li><a style=\"color:" + styleColor + "\;font-weight:bold\;\"  target=\"_blank\" href=\"/" + result[j].Id + "\" >" + result[j].Status + "</a></li>";
+                                    }
+                                    unorderListElem[i].innerHTML = ulValue;
+                                }
+                            }
+
+                            i = 0;
+                            var tdElem = document.getElementsByTagName('td');
+                            var tdCount = tdElem.length;
+                            var taskCountId = 'TaskAllocation-' + objectiveId;
+                            var taskRemainingId = "TaskRemaining-" + objectiveId;
+                            for (i = 0; i < tdCount; i++) {
+                                if (tdElem[i].id == taskCountId) {
+                                    tdElem[i].innerHTML = Number(tdElem[i].innerHTML) - 1;
+                                }
+                            }
+
+                            fitTableRows();
+                        } else {
+                            showErrorMessage('ERROR', 'Cannot delete non-existing pending objective tasks');
+                        }
+                    } else {
+                        showErrorMessage('ERROR', event.message);
+                    }
+                }
+            );
+        }
+
+        function checkApexMessage(messageSeverity, messageSummary) {
+
+            if (messageSeverity != null && messageSeverity.length > 0) {
+                showErrorMessage(messageSeverity, messageSummary);
+            } else {
+                var errorMsg = document.getElementById('errorMessages');
+                errorMsg.innerHTML = "";
+            }
+        }
+
+        function showErrorMessage(messageLevel, message) {
+            var errorMsg = document.getElementById('errorMessages');
+            if (messageLevel == 'ERROR') {
+                errorMsg.innerHTML =
+                    "<span xmlns=\"http\://www\.w3\.org/1999/xhtml\" id=\"spanErrorMsg1\"><span id=\"spanErrorMsg2\"><div class=\"message errorM3\" role=\"alert\"><table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" class=\"messageTable\" style=\"padding:0px;margin:0px;\"><tbody><tr valign=\"top\"><td><img alt=\"ERROR\" class=\"msgIcon\" src=\"/s.gif\" title=\"ERROR\"></td><td class=\"messageCell\"><div id=\"divErrorMsg\" class=\"messageText\"><span id=\"spanErrorMsgText\" style=\"color\:\#cc0000\"><h4>Error\:</h4></span>" +
+                    message +
+                    "<br></div></td></tr><tr><td></td><td></td></tr></tbody></table></div></span></span>";
+            } else if (messageLevel == 'CONFIRM') {
+                errorMsg.innerHTML =
+                    "<span xmlns=\"http\://www\.w3\.org/1999/xhtml\" id=\"spanErrorMsg1\"><span id=\"spanErrorMsg2\"><div class=\"message confirmM3\" role=\"alert\"><table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" class=\"messageTable\" style=\"padding:0px;margin:0px;\"><tbody><tr valign=\"top\"><td><img alt=\"CONFIRM\" class=\"msgIcon\" src=\"/s.gif\" title=\"CONFIRM\"></td><td class=\"messageCell\"><div id=\"divErrorMsg\" class=\"messageText\"><span id=\"spanErrorMsgText\"><h4>Success\:</h4></span>" +
+                    message +
+                    "<br></div></td></tr><tr><td></td><td></td></tr></tbody></table></div></span></span>";
+            } else {
+                errorMsg.innerHTML =
+                    "<span xmlns=\"http\://www\.w3\.org/1999/xhtml\" id=\"spanErrorMsg1\"><span id=\"spanErrorMsg2\"><div class=\"message warningM3\" role=\"alert\"><table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" class=\"messageTable\" style=\"padding:0px;margin:0px;\"><tbody><tr valign=\"top\"><td><img alt=\"WARNING\" class=\"msgIcon\" src=\"/s.gif\" title=\"WARNING\"></td><td class=\"messageCell\"><div id=\"divErrorMsg\" class=\"messageText\"><span id=\"spanErrorMsgText\" style=\"color\:\#cc0000\"><h4>Warning\:</h4></span>" +
+                    message +
+                    "<br></div></td></tr><tr><td></td><td></td></tr></tbody></table></div></span></span>";
+            }
+        }
+
+        function destroyLoadingDialog() {
+            $("#loading-message").dialog("close");
+        }
+
+        function objectiveInformation() {
+
+            /*display the objective information*/
+            // $("#objectiveDialog").dialog({
+            //  open: function(event, ui) { $(".ui-dialog-titlebar-close").show();},
+            //  modal:true,
+            //  width:430
+            // });
+
+            $('#objective-information-modal').css('display', 'block');
+        }
+
+        function addressInformation() {
+
+            /*Send Ajax Call to controller and create task. Calls saveTask function*/
+            // $("#addressDialog").dialog({
+            //  open: function (event, ui) {
+            //      $(".ui-dialog-titlebar-close").show();
+            //  },
+            //
+            //  modal: true,
+            //  width: 430
+            //
+            // });
+
+            $('#address-modal').css('display', 'block');
+        }
+
+        $(function () {
+            $('.slide-out-divcp').tabSlideOut({
+                tabHandle: '.handle',                     //class of the element that will become your tab
+                pathToTabImage: '{!$Resource.HelpIcon}', //path to the image for the tab //Optionally can be set using css
+                imageHeight: '122px',                     //height of tab image           //Optionally can be set using css
+                imageWidth: '40px',                       //width of tab image            //Optionally can be set using css
+                tabLocation: 'left',                      //side of screen where tab lives, top, right, bottom, or left
+                speed: 300,                               //speed of animation
+                action: 'click',                          //options: 'click' or 'hover', action to trigger animation
+                topPos: '87px',                          //position from the top/ use if tabLocation is left or right
+                leftPos: '20px',                          //position from left/ use if tabLocation is bottom or top
+                fixedPosition: false                      //options: true makes it stick(fixed position) on scroll
+            });
+
+        });
+
+    </script>
+
+    <script>
+        function fitTableRows() {
+            let leftRows = $('table.left-table tbody tr');
+            let rightRows = $('table.right-table tbody tr');
+
+            for (let i = 0; i < leftRows.length; i++) {
+                let height = Math.max(leftRows[i].offsetHeight, rightRows[i].offsetHeight);
+                leftRows[i].style.height = height + 'px';
+                rightRows[i].style.height = height + 'px';
+            }
+
+            let topHeaders = $('.fixed-header table.right-table thead th');
+            let bottomHeaders = $('.right-table-container table.right-table thead th');
+
+            for (let i = 0; i < topHeaders.length; i++) {
+                topHeaders[i].style.width = bottomHeaders[i].offsetWidth + 'px';
+            }
+
+            $('.fixed-header table.right-table').css('width', $('.right-table-container table.right-table')[0].offsetWidth + 'px');
+
+            $('.right-table-container').off('scroll').on('scroll', function() {
+                $('.fixed-header table.right-table').css('left', (-$(this)[0].scrollLeft) + 'px');
+            });
+        }
+
+        window.onload = function() {
+            (() => {
+                $('.slds-dropdown-trigger').on('click', function () {
+                    $(this).toggleClass('slds-is-open');
+                });
+
+                $('.close-button').on('click', function () {
+                    $(this).parents('.modal').css('display', 'none');
+                });
+
+                window.addEventListener('scroll', () => {
+                    if ($('.right-table-container')[0].getBoundingClientRect().y <= 0) {
+                        $('.fixed-header').css('display', 'flex');
+                    } else {
+                        $('.fixed-header').css('display', 'none');
+                    }
+                });
+
+                $('#toggleFilterSection').on('click', () => {
+                    if ($('#filterSection')[0].style.display === 'block') {
+                        $('#filterSection').css('display', 'none');
+                    } else {
+                        $('#filterSection').css('display', 'block');
+                    }
+                });
+
+                setInterval(fitTableRows, 250);
+            })();
+        };
+
+        $(window).on('scroll', function() {
+            if (window.scrollY > window.innerHeight / 3) {
+                $('.scroll-up-button').addClass('visible');
+            } else {
+                $('.scroll-up-button').removeClass('visible');
+            }
+        });
+
+        $(function() {
+            $('.scroll-up-button').on('click', function() {
+                $("html").animate({ scrollTop: 0 }, "slow");
+            });
+        });
+    </script>
+    </html>
+</apex:page>

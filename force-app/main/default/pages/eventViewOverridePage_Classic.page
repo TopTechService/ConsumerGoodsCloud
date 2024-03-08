@@ -1,0 +1,18 @@
+<apex:page standardController="Event" extensions="eventViewOverridePage_Controller">
+    <apex:form >
+        <apex:pageMessages />
+        <apex:detail relatedList="true"></apex:detail>
+        <apex:pageblock id="CustomList" title="Related Tasks Objective"  >
+            <apex:pageBlockTable value="{!taskz}" var="o" rendered="{!NOT(ISNULL(taskz))}">
+                
+                <apex:column headerValue="Subject">
+                      <a href="/{!o.id}">{!o.subject}</a>
+                </apex:column>
+                <apex:column value="{!o.Status}"></apex:column>
+                <apex:column headerValue="Due Date" value="{!o.ActivityDate}"/>
+                       
+            </apex:pageBlockTable>
+            <apex:outputLabel value="No records to display" rendered="{!(ISNULL(taskz))}" styleClass="noRowsHeader"></apex:outputLabel>
+        </apex:pageblock>
+    </apex:form>
+</apex:page>

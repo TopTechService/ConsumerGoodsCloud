@@ -1,0 +1,6 @@
+<apex:component controller="MessageHelperController" access="global">
+    <apex:attribute name="faultCode" type="String" description="FaultCode" assignTo="{!errorCode}"></apex:attribute>
+    <apex:attribute name="orderIdvalue" type="Id" description="Sales Order Id or Sales Order Product Id" assignTo="{!orderId}"></apex:attribute>
+    <apex:attribute name="objectName" type="String" description="Name of Object" assignTo="{!objectType}" ></apex:attribute>
+    {!MessageValue}
+</apex:component>

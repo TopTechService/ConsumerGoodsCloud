@@ -1,0 +1,288 @@
+<!--
+ * @author    : Created by Manish Damle on 12 Apr, 2013  manish.damle@arxxus.com
+ * @Purpose   : Call Planning Page for AUS
+ * @Criteria  : 
+ * @Modified  : 10 Apr, 2013 Modified by Geeta Kushwaha, geeta.kushwaha@arxxus.com & Debashish Dinda, debashish.dinda@arxxus.com 
+ *-->
+<apex:page sidebar="false" showHeader="false" controller="CallVisitPlanController" contenttype="application/vnd.ms-excel#Call_Planning.xls" cache="false" >
+    
+    <style>
+        body {
+            background-color:white; 
+            font-family:"Arial";
+        }
+        body .bPageBlock, body #bodyCell .bResource .secondaryPalette, body .secondaryPalette.bPageBlock, body .individualPalette .secondaryPalette.bPageBlock, body .bodyDiv .genericTable, body .genericPageBlockTable, body .bodyDiv .bSubBlock, body .bComponentBlock .bPageBlock, body .bMyDashboard .bPageBlock, body.rlHoverFrame .bPageBlock, body.subjectSelectionPopup div.choicesBox, body.lookupTab .secondaryPalette.bPageBlock, body.popupTab .secondaryPalette.bPageBlock, body.UserTagStatsPage .secondaryPalette.bPageBlock {
+            background-color: white;
+            border-bottom: 1px solid #EAEAEA;
+            border-left: 1px solid #EAEAEA;
+            border-radius: 4px 4px 4px 4px;
+            border-right: 1px solid #EAEAEA;
+        }
+        
+        body .bPageBlock, body #bodyCell .bResource .secondaryPalette, body .secondaryPalette.bPageBlock, body .individualPalette .secondaryPalette.bPageBlock, body .bodyDiv .genericTable, body .genericPageBlockTable, body .bodyDiv .bSubBlock, body .bComponentBlock .bPageBlock, body .bMyDashboard .bPageBlock, body.rlHoverFrame .bPageBlock, body.subjectSelectionPopup div.choicesBox, body.lookupTab .secondaryPalette.bPageBlock, body.popupTab .secondaryPalette.bPageBlock, body.UserTagStatsPage .secondaryPalette.bPageBlock {
+            border-bottom: 1px solid #EAEAEA;
+            border-left: 1px solid #EAEAEA;
+            border-radius: 4px 4px 4px 4px;
+            border-right: 1px solid #EAEAEA;
+            border-color: none;
+        }       
+
+    </style>
+    
+    <apex:pageBlock >
+        <H2 style="font-family:Arial;">{!$Label.callplanning}</h2>
+    
+       <table cellspacing="0" cellpadding="0" style="width:100%;background-color:white;display: table-cell;width:10%;height:30px;">
+            
+            <tr>
+                <td colspan="2">
+                    <table style="width:110px !important;width:660px;margin:0px auto; text-align:center;font-family:Arial;font-size:12px;font-weight:bold;background-color:rgb(173,182,212)" >
+                        <apex:outputPanel rendered="{!if(userLocation=='australia', true, false)}">
+                            <tr>
+                                <td >
+                                    <b>Year: <apex:OutputText value="{!selectedYear}"/></b>
+                                </td>
+                                <td>
+                                    <b>Banner Group: 
+                                        <apex:repeat value="{!bannerGroups}" var="bGroup">
+                                            <apex:OutputText value="{!bGroup.Label}," rendered="{!if(bGroup.value == selectedBanerGroup, true, false)}"/>
+                                        </apex:repeat>                                  
+                                    </b>
+                                </td>
+                                <td>
+                                    <b>Owner: 
+                                        <apex:repeat value="{!outlets}" var="outlet" rendered="{!if(selectedOutlet != currentUser.Id, true, false)}">
+                                            <apex:OutputText value="{!outlet.Label}" rendered="{!if(outlet.value == selectedOutlet, true, false)}"/>
+                                        </apex:repeat> 
+                                        <apex:OutputText rendered="{!if(selectedOutlet == currentUser.Id, true, false)}" >
+                                               {!currentUser.FirstName}
+                                               {!currentUser.LastName}
+                                        </apex:OutputText>
+                                    </b>
+                                </td>
+                            </tr>
+                            <tr>
+                               <td>
+                                    <b>Call Cycle: 
+                                    <apex:repeat value="{!callCycles}" var="cc" rendered="{!if(userLocation=='australia', true, false)}">
+                                            <apex:OutputText value="{!cc.Label}" rendered="{!if(cc.value == selectedCallCycle, true, false)}"/>
+                                        </apex:repeat>
+                                    </b>
+                                </td>
+                                <td>
+                                   <b>Event Status: <apex:OutputText value="{!selectedEventStatus}"/></b>
+                                </td>
+                                <td>
+                                    <b>Grading: <apex:OutputText value="{!selectedGrading}" /></b>
+                                </td>
+                            </tr>
+                            <tr>
+                               <td>
+                                   <b>Week: <apex:OutputText value="{!selectedWeek}"/></b>
+                                </td>
+                                <td>
+                                   <b>Region: <apex:OutputText value="{!selectedPostcode}"/></b>
+                                </td>
+                                <td>
+                                </td>
+                            </tr>  
+                        </apex:outputPanel> 
+                                               
+                    </table>
+                </td>
+            </tr>
+            
+        </table>      
+        <br/>
+
+        <apex:variable value="{!1}" var="columnCount"/>
+        <apex:outputPanel id="PlanningGrid">
+            <table cellspacing="0" cellpadding="0" style="width:100%;border:1px black solid;font-family:Arial;font-size:12px;">
+                <thead > 
+                    <tr>
+                         <th id="outlet" style="color:white;background-color:rgb(0,62,126)  !important;border-left: 1px solid grey;border-bottom: 1px solid black;display: table-cell;height:30px;background-color:#003e7e;vertical-align: middle;font-weight:bold !important;text-align:center;" >  
+                            <apex:outputText value="Outlet" />
+                         </th>
+                        
+                         <apex:outputText rendered="{!if(userLocation=='australia', true, false)}">
+                            <apex:outputText rendered="{!bannerGrpFlag}">
+                                <apex:variable var="columnCount" value="{!columnCount + 1}"/>
+                                <th style="color:white;background-color:rgb(0,62,126)  !important;border-left: 1px solid grey;border-bottom: 1px solid black;display: table-cell;height:30px;background-color:#003e7e;vertical-align: middle;font-weight:bold !important;text-align:center;"> 
+                                    <apex:OutputText value="Banner Group"/>
+                                </th>
+                            </apex:outputText>
+                            
+                            <apex:outputText rendered="{!cityFlag}">
+                                <apex:variable var="columnCount" value="{!columnCount + 1}"/>
+                                <th style="color:white;background-color:rgb(0,62,126)  !important;border-left: 1px solid grey;border-bottom: 1px solid black;display: table-cell;height:30px;background-color:#003e7e;vertical-align: middle;font-weight:bold !important;text-align:center;">     
+                                    <apex:outputText value="City" />
+                                </th>
+                             </apex:OutputText>
+                             
+                             <apex:outputText rendered="{!postCodeFlag}">
+                                <apex:variable var="columnCount" value="{!columnCount + 1}"/>
+                                <th style="color:white;background-color:rgb(0,62,126)  !important;border-left: 1px solid grey;border-bottom: 1px solid black;display: table-cell;height:30px;background-color:#003e7e;vertical-align: middle;font-weight:bold !important;text-align:center;">     
+                                    <apex:outputText value="Post Code" />
+                                </th>
+                             </apex:OutputText>
+                             
+                            <apex:outputText rendered="{!volumeFlag}">
+                                <apex:variable var="columnCount" value="{!columnCount + 1}"/>
+                                <th style="color:white;background-color:rgb(0,62,126)  !important;border-left: 1px solid grey;border-bottom: 1px solid black;display: table-cell;height:30px;background-color:#003e7e;vertical-align: middle;font-weight:bold !important;text-align:center;">     
+                                     <apex:outputText value="Volume (9LE - Current Year)" />
+                                </th>
+                            </apex:OutputText>
+                         </apex:outputText>
+                          
+                         <apex:outputText rendered="{!gradingFlag}">
+                             <th style="color:white;background-color:rgb(0,62,126)  !important;border-left: 1px solid grey;border-bottom: 1px solid black;display: table-cell;height:30px;background-color:#003e7e;vertical-align: middle;font-weight:bold !important;text-align:center;">
+                                <apex:variable var="columnCount" value="{!columnCount + 1}"/>     
+                                <apex:outputText value="{!$Label.grading}" />
+                             </th>  
+                         </apex:outputText>
+                         <apex:outputText rendered="{!if(selectedWeek == 'All',true, false)}">
+                             <apex:repeat value="{!weeksHeader}" var="weekNumber">
+                                <th style="background-color:rgb(198,12,48) !important;border-left: 1px solid grey;border-bottom: 1px solid black;display: table-cell;height:30px;background-color:#003e7e;vertical-align: middle;font-weight:bold !important;text-align:center;">
+                                    <apex:outputText value="{!weekNumber}"/>
+                                </th>
+                                <apex:variable var="columnCount" value="{!columnCount + 1}"/>
+                             </apex:repeat>
+                         </apex:outputText>
+                         <apex:outputText rendered="{!if(selectedWeek == 'All',false, true)}">
+                            <apex:repeat value="{!daysHeader}" var="dayName">
+                                <th style="background-color:rgb(198,12,48) !important;border-left: 1px solid grey;border-bottom: 1px solid black;display: table-cell;height:30px;background-color:#003e7e;vertical-align: middle;font-weight:bold !important;text-align:center;">
+                                    <apex:outputText value="{!dayLabels[dayName]}" />
+                                    <apex:variable var="columnCount" value="{!columnCount + 1}"/>
+                                </th>
+                             </apex:repeat>
+                         </apex:outputText>
+                    </tr>
+                </thead> 
+                
+                <tbody>
+                    <apex:repeat value="{!accountsListExcel}" var="acc">
+                        <tr>
+                            <td  style="border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;vertical-align: top;vertical-align:middle;background-color:rgb(173,182,212);"> 
+                                <apex:outputtext value="{!acc.Name}"/>
+                            </td>
+                            
+                            <apex:outputText rendered="{!if(userLocation=='australia', true, false)}">
+                                <apex:outputText rendered="{!bannerGrpFlag}">
+                                    <td style="vertical-align:middle;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;vertical-align: top;background-color:rgb(173,182,212);" >
+                                        {!acc.Banner_Group_Name__c}
+                                    </td>
+                                </apex:outputText> 
+                                <apex:outputText rendered="{!cityFlag}" > 
+                                    <td style="vertical-align:middle;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;vertical-align: top;background-color:rgb(173,182,212);" > 
+                                       <!--{!acc.Region1__c} -->
+                                       {!acc.BillingCity}
+                                    </td>
+                                </apex:outputText>
+                                <apex:outputText rendered="{!postCodeFlag}"> 
+                                    <td style="vertical-align:middle;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;vertical-align: top;background-color:rgb(173,182,212);" > 
+                                       <!--{!acc.Region1__c} -->
+                                       {!acc.BillingPostalCode}
+                                    </td>
+                                </apex:outputText>
+                                <apex:outputText rendered="{!volumeFlag}" >
+                                    <td  style="vertical-align:middle;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;vertical-align: top;background-color:rgb(173,182,212);" >
+                                       {!acc.Volume__c}
+                                    </td>
+                                </apex:outputText> 
+                            </apex:outputText>      
+                               
+                            
+                            <apex:outputText rendered="{!gradingFlag}" >
+                                <td style="vertical-align:middle;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;vertical-align: top;background-color:rgb(173,182,212);">
+                                    {!acc.Account_Grading__c}
+                                </td>
+                            </apex:outputText> 
+                            
+                            <!-- Plot the Event data -->
+                            
+                            <!-- Plot the Event data for All Weeks-->
+                            <apex:outputText rendered="{!if(selectedWeek == 'All',true, false)}"> 
+                                <apex:repeat value="{!weeksHeader}" var="weekName">
+                                   <td style="border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;vertical-align: top;">
+                                       <ul style="list-style:none;text-align:left;padding:0px;margin-top:10px !important;margin-bottom:0 !important;">
+                                           <apex:repeat value="{!eventsMapExcel[acc.Id][weekName]}" var="dayOfEvent">
+                                               <apex:variable value="black" var="linkClass"/> 
+                                               <apex:repeat value="{!eventsMapExcel[acc.Id][weekName][dayOfEvent]}" var="Event">
+                                                   <apex:variable value="{!IF(AND(Event.ActivityDate < todaysDate, Event.Status__c != 'Completed'),'red',IF(Event.Status__c == 'Deferred','Green',if(Event.Status__c=='Completed','blue','black')))}" var="linkClass"/> 
+                                                   <li style="text-align:left !important;padding:0px;margin-left:2px !important;">
+                                                       <apex:outputText value="{!dayLabels[dayOfEvent]}" style="color:{!linkClass};font-weight:bold;" />
+                                                   </li>
+                                               </apex:repeat>  
+                                           </apex:repeat>
+                                       </ul>  
+                                   </td> 
+                                </apex:repeat>  
+                            </apex:outputText>
+                            <!-- Plot the Event data for a selected week -->
+                            <apex:outputText rendered="{!if(selectedWeek == 'All',false, true)}">
+                                <apex:repeat value="{!daysHeader}" var="dayName">
+                                   <td style="border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;vertical-align:middle;">  
+                                        <apex:variable value="{!0}" var="EventFound"/>
+                                        <apex:repeat value="{!eventsMapExcel[acc.Id][selectedWeek][dayName]}" var="Event">
+                                            <apex:variable value="{!1}" var="EventFound"/>
+                                       </apex:repeat>                                                                               
+                                       <ul style="list-style:none;text-align:left;padding:0px;margin-top:10px !important;margin-bottom:0 !important;">
+                                           <li style="text-align:left !important;padding:0px;margin-left:2px !important;">
+                                           <apex:variable value="black" var="linkClass"/> 
+                                           <apex:repeat value="{!eventsMapExcel[acc.Id][selectedWeek][dayName]}" var="Event">
+                                               <apex:variable value="{!IF(AND(Event.ActivityDate < todaysDate, Event.Status__c != 'Completed'),'red',IF(Event.Status__c == 'Deferred','Green',if(Event.Status__c=='Completed','blue','black')))}" var="linkClass"/>
+                                                   <apex:outputText value="{!dayLabels[dayName]}" style="color:{!linkClass};font-weight:bold;" rendered="{!if(ISBLANK(eventsMapExcel[acc.Id][selectedWeek][dayName][0].Id), false, true)}"/>
+                                               <apex:outputText value="{!dayLabels[dayName]}" rendered="{!if(eventsMapExcel[acc.Id][selectedWeek][dayName][0].Id =='', true, false)}" style="color:{!linkClass};font-weight:bold;"/>
+                                           </apex:repeat>
+                                           </li>
+                                       </ul>  
+                                   </td> 
+                                </apex:repeat> 
+                            </apex:outputText>
+                        </tr>
+                    </apex:repeat> 
+                    <tr >
+                        <td style="border: 1px solid #ddd !important;display: table-cell;width:7%;padding:3px;vertical-align: top;" colspan="{!FLOOR(columnCount)}">
+                        </td>
+                    </tr>
+                    
+                    <!-- Total Number of calls -->
+                    
+                    <apex:repeat value="{!daysHeader}" var="dayName" rendered="{!if(AND(selectedWeek == 'All',userLocation=='australia'),true, false)}">
+                       <tr>
+                           <apex:outputText rendered="{!bannerGrpFlag}" ><td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"></td></apex:outputText>
+                           <apex:outputText rendered="{!cityFlag}" ><td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"></td></apex:outputText>
+                           <apex:outputText rendered="{!postCodeFlag}" ><td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"></td></apex:outputText>
+                           <apex:outputText rendered="{!volumeFlag}" ><td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"></td></apex:outputText>
+                           <apex:outputText rendered="{!gradingFlag}" ><td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"></td></apex:outputText>
+                           <td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;">Total Number of Calls - {!Right(dayName,3)}</td>
+                           <apex:repeat value="{!weeksHeader}" var="weekName">
+                                <td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;">{!dayWiseStatsAusExcel[dayName][weekName]}</td>
+                           </apex:repeat>                                   
+                       </tr>
+                    </apex:repeat>
+                    
+                    <tr>
+                        <apex:outputText rendered="{!if(userLocation=='australia',true, false)}">
+                            <apex:outputText rendered="{!bannerGrpFlag}" ><td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"></td></apex:outputText>
+                            <apex:outputText rendered="{!cityFlag}" ><td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"></td></apex:outputText>
+                            <apex:outputText rendered="{!postCodeFlag}" ><td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"></td></apex:outputText>
+                            <apex:outputText rendered="{!volumeFlag}" ><td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"></td></apex:outputText>
+                        </apex:outputText>
+   
+                        <apex:outputText rendered="{!gradingFlag}" ><td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;"></td></apex:outputText>
+                        <td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;">{!$Label.totalnumberofcalls}</td>
+                        <apex:repeat value="{!weeksHeader}" var="weekName" rendered="{!if(selectedWeek == 'All', true, false)}">
+                            <td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;">{!numberOfCallsMapExcel[weekName]}</td>
+                        </apex:repeat>
+                        <apex:repeat value="{!daysHeader}" var="dayName" rendered="{!if(selectedWeek == 'All', false, true)}">
+                            <td style="height: 30px;border-left: 1px solid #ddd;border-top: 1px solid #ddd;display: table-cell;width:7%;padding:3px;">{!numberOfCallsMapExcel[dayName]}</td>
+                        </apex:repeat>
+                    </tr>
+                      
+                </tbody>
+            </table>
+        </apex:outputPanel>
+        <br/>   
+</apex:pageBlock>   
+</apex:page>

@@ -1,0 +1,6 @@
+<apex:component controller="ContactHelper" access="global">
+    <apex:attribute name="accountId" type="Id" description="Account Id" assignTo="{!accId}"></apex:attribute>
+    <apex:repeat var="c" value="{!contactName}">
+        {!c.lastName} {!c.firstname} <br/>
+    </apex:repeat>
+</apex:component>
