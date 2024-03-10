@@ -178,6 +178,12 @@ public with sharing class OutletTriggerHelper {
             oMySalesId = String.valueOf(outlet.Outlet_My_Sales_Id__c.round());
         }
 
+        //create address field 
+        String add1  =  otlt.Address_Line_1__c!=null?otlt.Address_Line_1__c:'';
+        String add2  =  otlt.Address_Line_2__c!=null?otlt.Address_Line_2__c:'';  
+        String post  =  otlt.Post_Code__c!=null?otlt.Post_Code__c:''; 
+        String city  =  otlt.Suburb__c!=null?otlt.Suburb__c:'';
+
         RetailStore newStore = new RetailStore(Name = outlet.Name,
                                                AccountId = parentId,
                                                My_Sales_ID__c = oMySalesId,
@@ -185,7 +191,18 @@ public with sharing class OutletTriggerHelper {
                                                Licence_Class__c = outlet.Licence_Class__c,
                                                Licence_Number__c = outlet.Licence_Number__c,
                                                Licence_Type_ID__c = outlet.Licence_Type_ID__c,
-                                               LMAA_Code__c = outlet.LMAA_Code__c);
+                                               LMAA_Code__c = outlet.LMAA_Code__c,
+                                               New_Liqour_Licence_Number__c = outlet.New_Liqour_Licence_Number__c,
+                                               Outlet_Category_ID__c = outlet.Outlet_Category_ID__c,
+                                               Street = add1 + ' ' + add2,
+                                               City = city,
+                                               State = outlet.State_Name__c,
+                                               PostalCode = outlet.Post_Code__c,
+                                               OwnerId = outlet.OwnerId,
+                                               Outlet__c = outlet.Id);
+        if (String.isBlank(outlet.ASM_User_ID__c)) {
+            newStore.Unallocated__c = true;
+        }
         return newStore;
     }
 }
