@@ -5,10 +5,24 @@ public with sharing class OutletTriggerHelper {
 
     public static void insertOutlet(Map<Id,Outlet__c> newMap) {
 
+        List<Default_Account_Owner__c> outletOwner = Default_Account_Owner__c.getAll().values();
+        String outletOwnerId = outletOwner[0].Id;
+        for(Outlet__c outlet : newMap.values()) {
+            outlet.Outlet_Name__c = outlet.Outlet_Name__c.toUpperCase();
+            outlet.OwnerId = outletOwnerId;
+        }
     }
 
     public static void updateOutlet(Map<Id,Outlet__c> newMap, Map<Id,Outlet__c> oldMap) {
-        
+
+        for (Id outletId : newMap.keySet()) {
+            Outlet__c newOutlet = newMap.get(outletId);
+            Outlet__c oldOutlet = oldMap.get(outletId);
+            if (newOutlet.Outlet_Name__c != oldOutlet.Outlet_Name__c) {
+                newOutlet.Outlet_Name__c = newOutlet.Outlet_Name__c.toUpperCase();
+            }
+        }
+
     }
 
     public static void updateRelatedStore(Map<Id, Outlet__c> newMap, Map<Id, Outlet__c> oldMap) {
@@ -18,6 +32,7 @@ public with sharing class OutletTriggerHelper {
         List<RetailStore> storesToInsert = new List<RetailStore>();
         Map<String, Outlet__c> mapOutletByMSid = new Map<String, Outlet__c>();
         Map<String, RetailStore> mapStoreByMSid = new Map<String, RetailStore>();
+        Map<String, Id> mapChannelByGroupId = new Map<String, Id>();
 
         for (Outlet__c outlet : newMap.values()) {
             if (outlet.Outlet_My_Sales_Id__c == null) {
@@ -26,6 +41,10 @@ public with sharing class OutletTriggerHelper {
                 String oMySalesId = String.valueOf(outlet.Outlet_My_Sales_Id__c.round());
                 mapOutletByMSid.put(oMySalesId, outlet);
             }
+        }
+
+        for (RetailLocationGroup rlg : [SELECT Id, Channel__c FROM RetailLocationGroup]) {
+            mapChannelByGroupId.put(rlg.channel__c, rlg.Id);
         }
 
         List<RetailStore> retailStores = [SELECT Id, Name, ASM_User_ID__c, Street, Licence_Class__c, 
@@ -51,6 +70,9 @@ public with sharing class OutletTriggerHelper {
                 //Check for updated Fields
                 if (newOutlet.Outlet_Name__c != oldOutlet.Outlet_Name__c) {
                     storeToUpdate.Name = newOutlet.Outlet_Name__c;
+                }
+                if (newOutlet.Channel__c != oldOutlet.Channel__c) {
+                    storeToUpdate.RetailLocationGroupId = mapChannelByGroupId.get(newOutlet.Channel__c);
                 }
                 if (newOutlet.Licence_Class__c != oldOutlet.Licence_Class__c) {
                     storeToUpdate.Licence_Class__c = newOutlet.Licence_Class__c;
@@ -93,7 +115,7 @@ public with sharing class OutletTriggerHelper {
                 storesToUpdate.add(storeToUpdate);
             } else {
                 //Create a new retail store
-                RetailStore newStore = createNewStore(newMap.get(outletId), accountId);
+                RetailStore newStore = createNewStore(newMap.get(outletId), accountId, mapChannelByGroupId);
                 storesToInsert.add(newStore);
             }
         }
@@ -108,17 +130,22 @@ public with sharing class OutletTriggerHelper {
     public static void insertRelatedStore(Map<Id, Outlet__c> newMap) {
 
         List<RetailStore> storesToInsert = new List<RetailStore>();
+        Map<String, Id> mapChannelToId = new Map<String, Id>();
         Id accountId = getParentAccount();
 
+        for (RetailLocationGroup rlg : [SELECT Id, Channel__C FROM RetailLocationGroup]) {
+            mapChannelToId.put(rlg.Channel__c, rlg.Id);
+        }
+
         for (Outlet__c outlet : newMap.values()) {
-            RetailStore newStore = createNewStore(outlet, accountId);
+            RetailStore newStore = createNewStore(outlet, accountId, mapChannelToId);
             storesToInsert.add(newStore);
         }
 
         Database.SaveResult[] newStoreResults = Database.insert(storesToInsert, false);
     }
 
-    private Static RetailStore createNewStore(Outlet__c outlet, Id parentId) {
+    private Static RetailStore createNewStore(Outlet__c outlet, Id parentId, Map<String,Id> mapGroup) {
 
         String oMySalesId;
         if (outlet.Outlet_My_Sales_Id__c == null) {
@@ -145,6 +172,8 @@ public with sharing class OutletTriggerHelper {
                                                Licence_Type_ID__c = outlet.Licence_Type_ID__c,
                                                LMAA_Code__c = outlet.LMAA_Code__c,
                                                New_Liquor_Licence_Number__c = outlet.New_Liquor_Licence_Number__c,
+                                               Territory__c = outlet.Territory__c,
+                                               RetailLocationGroupId = mapGroup.get(outlet.Channel__c),
                                                Street = add1 + '' + add2,
                                                City = city,
                                                State = outlet.State_Name__c,
