@@ -108,6 +108,9 @@ public with sharing class OutletTriggerHelper {
                 if (newOutlet.State_Name__c != oldOutlet.State_Name__c) {
                     storeToUpdate.State = newOutlet.State_Name__c;
                 }
+                if (newOutlet.Segmentation__c != oldOutlet.Segmentation__c) {
+                    storeToUpdate.StoreType = newOutlet.Segmentation__c;
+                }
                 if (newOutlet.ASM_User_ID__c != oldOutlet.ASM_User_ID__c) {
                     storeToUpdate.ASM_User_ID__c = newOutlet.ASM_User_ID__c;
                 }
@@ -168,6 +171,7 @@ public with sharing class OutletTriggerHelper {
                                                RecordTypeId = storeRecordTypeId,
                                                AccountId = parentId,
                                                My_Sales_ID__c = oMySalesId,
+                                               StoreType = outlet.Segmentation__c,
                                                ASM_User_ID__c = outlet.ASM_User_ID__c,
                                                Licence_Class__c = outlet.Licence_Class__c,
                                                Licence_Number__c = outlet.Licence_Number__c,
