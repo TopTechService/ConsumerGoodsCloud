@@ -4,7 +4,7 @@ trigger outletTrigger on Outlet__c ( after update, before insert, after insert) 
        
     if (Trigger.isBefore) {
         if (Trigger.isInsert) {
-            OutletTriggerHelper.insertOutlet(Trigger.newMap);
+            OutletTriggerHelper.insertOutlet(Trigger.new);
         } else if (Trigger.isUpdate) {
             OutletTriggerHelper.updateOutlet(Trigger.newMap, Trigger.oldMap);
         }

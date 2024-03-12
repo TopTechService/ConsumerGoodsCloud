@@ -28,32 +28,18 @@ public class accountTriggerHandler{
     public void beforeInsert(List<Account> newAccounts){//CodeReview - Set/change some fields before inserting an account (Volume__c, Banner_Group_ID__c, Parent_Hierarchy__c,Unallocated__c)
         List<Account> accounts = checkRecordType(newAccounts);
         Set <Id> parentAccountsId = new Set<Id>();
-        //List<Account> accountstoUpdate = new List<Account>();
+
         set<string> postCodeList = new set<string>();
         
         for(Account acc : accounts){
             if(acc.ParentId != null){
                 parentAccountsId.add(acc.ParentId);                
             }
-            //if (acc.BillingPostalCode <> NULL && acc.BillingCity <> NULL) {
-            //    string postCodeMerged = acc.BillingPostalCode + ' - ' + acc.BillingCity;
-            //    postCodeList.add(postCodeMerged);
-            //}
         }
        
         Map<Id, Account>   parentAccountMap = new Map<Id,Account>([SELECT Id,Parent_Hierarchy__c FROM Account WHERE Id IN: parentAccountsId] );
         System.debug(' AccTrig Before insert parentAccountMap>>> '+ parentAccountMap);
         
-        //List<Post_Code_Region__c> post_Codes = [SELECT Id, Name, Post_Code_Merged__c, Territory_Owner__c FROM Post_Code_Region__c WHERE Post_Code_Merged__c IN :postCodeList];
-        //Map<string,id> pcId = new Map<string,id>();
-        //Map<string,id> territoryOwId = new Map<string,id>();
-        //String defaultOwnerId ;
-                
-        //for(Post_Code_Region__c pc : post_Codes){
-        //        pcId.put(pc.Post_Code_Merged__c, pc.id); 
-        //        territoryOwId.put(pc.Post_Code_Merged__c,pc.Territory_Owner__c);
-        //}
-
         for (Account acc : accounts) {
             if(acc.Volume__c != null) {             
                   acc.Volume__c = acc.Volume__c.setScale(2);
@@ -71,66 +57,18 @@ public class accountTriggerHandler{
         	} else {              
                 acc.Unallocated__c = false;
             } 
-            //if(pcId.get(acc.Post_Code_Merged__c) <> null){
-            //    acc.Post_Code_Region__c = pcId.get(acc.Post_Code_Merged__c);
-            //    acc.Pending_Post_Code__c = FALSE;
-            //    
-            //    if(territoryOwId.get(acc.Post_Code_Merged__c)<>null){
-            //    acc.OwnerId = territoryOwId.get(acc.Post_Code_Merged__c);
-            //   } else if(Default_Account_Owner__c.getAll() != null && !Default_Account_Owner__c.getAll().values().isEmpty()){
-            //            defaultOwnerId = Default_Account_Owner__c.getAll().values()[0].ownerId__c;
-            //            acc.OwnerId = defaultOwnerId;
-            //       }else{
-            //            defaultOwnerId = userinfo.getuserid();
-            //            acc.OwnerId = defaultOwnerId;
-            //        }
-            //}else{
-            //    acc.Pending_Post_Code__c = TRUE;
-            //}
-               
-           // System.debug('beforeInsert accOwner'+ acc.OwnerId);      
-           // System.debug('beforeInsert territoryOwId'+ territoryOwId); 
-            //System.debug('beforeInsert pcId'+ pcId); 
-                
         }
     }
     
     public void beforeUpdate(Map<Id, Account> accountsNew, Map<Id, Account> accountsOld){
         List<Account> accounts = checkRecordType(accountsNew.values());
         if (RecursiveTriggerController.outletCount > 1){
-           // system.debug('accountTriggerHandler beforeUpdate RecursiveTriggerController.outletCount>>> '+RecursiveTriggerController.outletCount);
     		return;
         } 
         
         Set <Id> parentAccountsId = new Set<Id>();
-        
-        //Set<string> postCodeList = new Set<string>();
-        
-        //for(Account acc : accounts){ //Added on CodeReview Carnac aug,2022 to fix the parentAccountMap
-        //    if(acc.ParentId != null && acc.ParentId != accountsOld.get(acc.Id).ParentId){
-        //        parentAccountsId.add(acc.ParentId);                
-        //    }
-        //    if ((accountsOld.get(acc.Id).BillingPostalCode != acc.BillingPostalCode || accountsOld.get(acc.Id).BillingCity != acc.BillingCity) && acc.BillingPostalCode <> NULL && acc.BillingCity <> NULL) {
-        //        postCodeList.add(Acc.Post_Code_Merged__c);
-        //    }
-        //} 
-        
-       // system.debug('AccTrig BeforeUpdate postCodeList'+ postCodeList);
-        
+                
         Map<Id, Account> parentAccountMap = new Map<Id,Account>([SELECT Id,Parent_Hierarchy__c FROM Account WHERE Id IN: parentAccountsId]);                                                              
-       // System.debug('AccTrig beforeupdate parentAccountMap >>>'+ parentAccountMap);
-    
-        //List<Post_Code_Region__c> post_Codes = [SELECT Id, Name, Post_Code_Merged__c, Territory_Owner__c FROM Post_Code_Region__c WHERE Post_Code_Merged__c IN :postCodeList];
-        //Map<string,id> pcId = new Map<string,id>();
-        //Map<string,id> territoryOwId = new Map<string,id>();
-            
-        //for(Post_Code_Region__c pc : post_Codes){
-        //        pcId.put(pc.Post_Code_Merged__c, pc.id); 
-        //        territoryOwId.put(pc.Post_Code_Merged__c,pc.Territory_Owner__c);
-        //}
-        //System.debug('AccTrig beforeupdate pcId >>>'+ pcId);
-        //System.debug('AccTrig beforeupdate territoryOwId >>>'+ territoryOwId);
-        
 
         for (Account acc : accounts) {
             if(acc.Volume__c != null && acc.Volume__c != accountsOld.get(acc.Id).Volume__c) {             
@@ -149,17 +87,7 @@ public class accountTriggerHandler{
             } else {              
                 acc.Unallocated__c = false;
             }    
-            //if(pcId.get(acc.Post_Code_Merged__c) <> null){// check what happens when the post code merged do not match
-            //    acc.Post_Code_Region__c = pcId.get(acc.Post_Code_Merged__c);
-            //    acc.Pending_Post_Code__c = FALSE;
-            //    if(territoryOwId.get(acc.Post_Code_Merged__c)<>null){
-            //        acc.OwnerId = territoryOwId.get(acc.Post_Code_Merged__c);
-            //    }    
-            //}else{
-            //    acc.Pending_Post_Code__c = TRUE;
-            //}
         }
-        //System.debug('AccTrig Before update acc 2 checkdml>>> '+ acc);     
     }                   
      
     public void afterUpdate(Map<Id, Account> accountsNew, Map<Id, Account> accountsOld){
@@ -309,11 +237,6 @@ public class accountTriggerHandler{
         List<Id> accountWithoutOutletList = new List<Id>();
         
         outletMap.putAll(helper.getIdOutletMap(outlet));
-        //System.debug('updateOutlet updaterelatedOutlet outletMap>>> ' + outletMap);
-        //Map<String, List<Banner_Group_Outlet__c>> bgOutletMap = new Map<String, List<Banner_Group_Outlet__c>>(); // Codereview - commented as not working 118 commented
-        //List<Banner_Group_Outlet__c> updatableBGOutlet = new List<Banner_Group_Outlet__c>();
-        //bgOutletMap.putAll(helper.getbgoAccountMap(acId));
-        //System.debug('updateOutlet updaterelatedOutlet bgOutletMap keySet ' + bgOutletMap.keySet());
         System.debug('AccTriggerHandler updaterelatedOutlet outletMap keySet ' + outletMap.keySet());
         
         if(!outletMap.isEmpty()){
@@ -342,7 +265,6 @@ public class accountTriggerHandler{
                     for (Database.SaveResult sr : uResults) {
                         if (sr.isSuccess()) {
                             // Operation was successful, so get the ID of the record that was processed
-                           // System.debug('Successfully updated outlet. Outlet ID: ' + sr.getId());
                         }
                         else {
                             // Operation failed, so get all errors                

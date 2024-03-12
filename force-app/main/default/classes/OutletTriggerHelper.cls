@@ -3,12 +3,14 @@
 */
 public with sharing class OutletTriggerHelper {
 
-    public static void insertOutlet(Map<Id,Outlet__c> newMap) {
+    public static void insertOutlet(List<Outlet__c> newOutlets) {
 
         List<Default_Account_Owner__c> outletOwner = Default_Account_Owner__c.getAll().values();
-        String outletOwnerId = outletOwner[0].Id;
-        for(Outlet__c outlet : newMap.values()) {
-            outlet.Outlet_Name__c = outlet.Outlet_Name__c.toUpperCase();
+        System.debug('newMap: ' + newOutlets);
+        String outletOwnerId = outletOwner[0].OwnerId__c;
+        for(Outlet__c outlet : newOutlets) {
+            system.debug('Outlet: ' + outlet);
+            outlet.Outlet_Name__c = outlet.Outlet_Name__c?.toUpperCase();
             outlet.OwnerId = outletOwnerId;
         }
     }
@@ -162,7 +164,7 @@ public with sharing class OutletTriggerHelper {
         String post  =  outlet.Post_Code__c!=null?outlet.Post_Code__c:''; 
         String city  =  outlet.Suburb__c!=null?outlet.Suburb__c:'';
 
-        RetailStore newStore = new RetailStore(Name = outlet.Outlet_Name__c.toUpperCase(),
+        RetailStore newStore = new RetailStore(Name = outlet.Outlet_Name__c?.toUpperCase(),
                                                RecordTypeId = storeRecordTypeId,
                                                AccountId = parentId,
                                                My_Sales_ID__c = oMySalesId,
