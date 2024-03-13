@@ -4,6 +4,9 @@ trigger outletTrigger on Outlet__c ( after update, before insert, after insert) 
 
     if (TriggerControl.isOutletTriggerFired) return;
 
+    TriggerControl.isStoreTriggerFired = true;
+
+
     if (Trigger.isBefore) {
         if (Trigger.isInsert) {
             OutletTriggerHelper.insertOutlet(Trigger.new);
@@ -19,5 +22,4 @@ trigger outletTrigger on Outlet__c ( after update, before insert, after insert) 
         }
     }
     TriggerControl.isOutletTriggerFired = true;
-    TriggerControl.isStoreTriggerFired = true;
 }

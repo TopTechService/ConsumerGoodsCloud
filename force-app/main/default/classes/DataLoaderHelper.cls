@@ -39,7 +39,7 @@ public with sharing class DataLoaderHelper {
 	    }     
 	    return accountIdMap;
     }
-    
+/*    
    	//Get Map for trigger WholesalerBranchOutlet trigger  
    	public  Map<String,account>  getWholesalerOutletMapId (List<String> outletId){
 	   	Map<String,account> accntMap = new Map<String, account>();
@@ -53,6 +53,22 @@ public with sharing class DataLoaderHelper {
 	    }
 		return accntMap;
     }
+*/
+   	//Get Map for trigger WholesalerBranchOutlet trigger
+	// modified for Consumer Goods Cloud by daniel.peaper@viseo.com to use retail store records instead of accounts.
+   	public  Map<String,RetailStore>  getWholesalerOutletMapId (List<String> outletId){
+		Map<String,RetailStore> accntMap = new Map<String, RetailStore>();
+		Id recordtype = Schema.SObjectType.RetailStore.getRecordTypeInfosByDeveloperName().get('Retail_Store').getRecordTypeId();
+		List<RetailStore> accList  =  [SELECT Id, My_Sales_Id__c     
+										FROM RetailStore 
+										WHERE recordtypeid =:recordtype
+										AND My_Sales_Id__c IN : outletId];
+	 for(RetailStore ac:accList){
+		 accntMap.put(ac.My_Sales_ID__c,ac);
+	 }
+	 return accntMap;
+ }
+
   
   
   	//Get Map for trigger WholesalerBranchOutlet trigger

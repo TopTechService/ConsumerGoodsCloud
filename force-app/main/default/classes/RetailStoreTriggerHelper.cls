@@ -1,5 +1,51 @@
 public with sharing class RetailStoreTriggerHelper {
 
+    public static void updateNewStore(List<RetailStore> newStores) {
+
+        List<String> postCodesMerged = new List<String>();
+        Map<String,Id> mapPostCodeRegions = new Map<String,Id>();
+
+        for (RetailStore store : newStores) {
+            String postCodeMerged = store.PostalCode + ' - ' + store.City;
+            postCodesMerged.add(postCodeMerged);
+        }
+
+        mapPostCodeRegions = mapPostCodes(postCodesMerged);
+
+        for (RetailStore newStore : newStores) {
+            String newPostCodeMerged = newStore.PostalCode + ' - ' + newStore.City;
+            if (mapPostCodeRegions.containsKey(newPostCodeMerged)) {
+                newStore.Postcode_Region__c = mapPostCodeRegions.get(newPostCodeMerged);
+            }
+        }
+    }
+
+    public static void updateStore(Map<Id,RetailStore> newMap, Map<Id,RetailStore> oldMap) {
+
+        List<String> postCodesMerged = new List<String>();
+        Map<String,Id> mapPostCodeRegions = new Map<String,Id>();
+
+        for (Id retailStoreId : newMap.keySet()) {
+            RetailStore newStore = newMap.get(retailStoreId);
+            RetailStore oldStore = oldMap.get(retailStoreId);
+            String newPostCodeMerged = newStore.PostalCode + ' - ' + newStore.City;
+            String oldPostCodeMerged = oldStore.PostalCode + ' - ' + newStore.City;
+            if (newPostCodeMerged != oldPostCodeMerged) {
+                postCodesMerged.add(newPostCodeMerged);
+            }
+        }
+
+        if (postCodesMerged.size() > 0) {
+            mapPostCodeRegions = mapPostCodes(postCodesMerged);
+            for (RetailStore newStore : newMap.values()) {
+                String newPostCodeMerged = newStore.PostalCode + ' - ' + newStore.City;
+                if (mapPostCodeRegions.containsKey(newPostCodeMerged)) {
+                    newStore.Postcode_Region__c = mapPostCodeRegions.get(newPostCodeMerged);
+                }
+            }   
+        }
+    }
+
     public static void updateOutlet(Map<Id,RetailStore> newMap, Map<Id,RetailStore> oldMap) {
 
         List<String> mySalesIds = new List<String>();
@@ -58,10 +104,25 @@ public with sharing class RetailStoreTriggerHelper {
                 }
             }
             outletsForUpdate.add(outletForUpdate);
-
-            if (outletsForUpdate.size() > 0) {
-                Database.SaveResult[] outletUpdateResults = Database.update(outletsForUpdate, false);
-            }
         }
+        
+        if (outletsForUpdate.size() > 0) {
+            System.debug('Outlets for update = ' + outletsForUpdate.size());
+            Database.SaveResult[] outletUpdateResults = Database.update(outletsForUpdate, false);
+        }
+    }
+
+    private static Map<String,Id> mapPostCodes(List<String> postCodesMerged) {
+
+        Map<String,Id> mapPostCodeRegions = new Map<String,Id>();
+        List<Post_Code_Region__c> postCodeRegions = [SELECT Id, Name 
+                                                     FROM Post_Code_Region__c
+                                                     WHERE Name IN :postCodesMerged
+                                                     ];
+
+        for (Post_Code_Region__c postCode : postCodeRegions) {
+            mapPostCodeRegions.put(postCode.Name, postCode.Id);
+        }
+        return mapPostCodeRegions;                         
     }
 }

@@ -4,6 +4,7 @@
  * @description : This class populates Authorising_Rep__c, Supplier_Reference__c on sales order
  * @modified	: 25/02/2015
  *				  Truncate Supplier_Reference__c field to 20 chars, ALM accepts at most 20 chars for this field. 
+ * Modified by daniel.peaper@viseo.com as part of the Consumer Goods Cloud Project.
  */
 public class WholesalerAccountNumberHandlerSalesOrder {
     Public list<Sales_Order__c> salesOrderList = new list<Sales_Order__c>();
@@ -26,8 +27,8 @@ public class WholesalerAccountNumberHandlerSalesOrder {
         if(StaticVariableHandler.wholesalerAccountNumber == 1 ){
             // fetch sales order records 
             salesOrderList = [select id, name, Wholesaler_Account_Number__c, Supplier_Reference__c, Authorising_Rep__c,
-                                Outlet_Name__r.Outlet_ID__c, Wholesaler__r.Wholesaler_ID__c,
-                                Outlet_Name__r.Owner.LastName, Outlet_Name__r.Owner.FirstName
+                                Retail_Store__r.My_Sales_ID__c, Wholesaler__r.Wholesaler_ID__c,
+                                Retail_Store__r.Owner.LastName, Retail_Store__r.Owner.FirstName
                                 FROM Sales_Order__c
                                 WHERE Id IN : salesOrderIds];
                                 
@@ -37,7 +38,7 @@ public class WholesalerAccountNumberHandlerSalesOrder {
                     ownername = salesOrder.Outlet_Name__r.Owner.FirstName+salesOrder.Outlet_Name__r.Owner.LastName;
                     lastname = salesOrder.Outlet_Name__r.Owner.LastName;
                     
-                    outletId = salesOrder.Outlet_Name__r.Outlet_ID__c;
+                    outletId = salesOrder.Retail_Store__r.My_Sales_ID__c;
                     WholesalerId = salesOrder.Wholesaler__r.Wholesaler_ID__c;
                     
                     salesOrder.Authorising_Rep__c = lastname.Left(6);

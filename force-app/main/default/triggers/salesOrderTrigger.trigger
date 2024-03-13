@@ -5,6 +5,7 @@
                   Send approoved, inserted order to wholesaler.
                   Self approval for any order after 5 hours when it is created. [Geeta]
  * @modified: Geeta Kushwaha on 23 Oct, 2013
+ * modified by daniel.peaper@viseo.com as part of the Consumer goods Cloud project.
  */
 trigger salesOrderTrigger on Sales_Order__c (after insert, after update) {
     
@@ -44,7 +45,7 @@ trigger salesOrderTrigger on Sales_Order__c (after insert, after update) {
                 System.debug('Sales order record type: ' + salesOrder.RecordType.Name);
                 system.debug('===salesOrder====' + salesOrder);
                 if(salesOrder.Wholesaler__c != trigger.oldMap.get(salesOrder.id).Wholesaler__c 
-                            || salesOrder.Outlet_Name__c != trigger.oldMap.get(salesOrder.id).Outlet_Name__c){
+                            || salesOrder.Retail_Store__c != trigger.oldMap.get(salesOrder.id).Retail_Store__c){
                     salesOrderIds.add(salesorder.id);
                 }
                 

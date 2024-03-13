@@ -5,6 +5,7 @@ public with sharing class OutletTriggerHelper {
 
     public static void insertOutlet(List<Outlet__c> newOutlets) {
 
+        System.debug('Running Outlet before insert trigger.');
         List<Default_Account_Owner__c> outletOwner = Default_Account_Owner__c.getAll().values();
         System.debug('newMap: ' + newOutlets);
         String outletOwnerId = outletOwner[0].OwnerId__c;
@@ -17,6 +18,7 @@ public with sharing class OutletTriggerHelper {
 
     public static void updateOutlet(Map<Id,Outlet__c> newMap, Map<Id,Outlet__c> oldMap) {
 
+        System.debug('Running Outlet before update trigger.');
         for (Id outletId : newMap.keySet()) {
             Outlet__c newOutlet = newMap.get(outletId);
             Outlet__c oldOutlet = oldMap.get(outletId);
@@ -95,7 +97,7 @@ public with sharing class OutletTriggerHelper {
                     newOutlet.Address_Line_2__c != oldOutlet.Address_Line_2__c) {
                         String add1 = newOutlet.Address_Line_1__c != null ? newOutlet.Address_Line_1__c:'';
                         String add2 = newOutlet.Address_Line_2__c != null ? newOutlet.Address_Line_2__c:'';
-                        storeToUpdate.Street = add1 + '' + add2;
+                        storeToUpdate.Street = add1 + '\n' + add2;
                     }
                 if (newOutlet.Post_Code__c != oldOutlet.Post_Code__c) {
                     String postCode = newOutlet.Post_Code__c != null ? newOutlet.Post_Code__c:'';
@@ -125,9 +127,11 @@ public with sharing class OutletTriggerHelper {
             }
         }
         if (storesToUpdate.size() > 0) {
+            System.debug('Stores To Update = ' + storesToUpdate.size());
             Database.SaveResult[] updatedStoreResults = Database.update(storesToUpdate, false);
         }
         if (storesToInsert.size() > 0) {
+            System.debug('Stores to Insert = ' + storesToInsert.size());
             Database.SaveResult[] insertStoreResults = Database.insert(storesToInsert, false);
         }
     }
@@ -180,7 +184,7 @@ public with sharing class OutletTriggerHelper {
                                                New_Liquor_Licence_Number__c = outlet.New_Liquor_Licence_Number__c,
                                                Territory__c = outlet.Territory__c,
                                                RetailLocationGroupId = mapGroup.get(outlet.Channel__c),
-                                               Street = add1 + '' + add2,
+                                               Street = add1 + '\n' + add2,
                                                City = city,
                                                State = outlet.State_Name__c,
                                                PostalCode = outlet.Post_Code__c,
