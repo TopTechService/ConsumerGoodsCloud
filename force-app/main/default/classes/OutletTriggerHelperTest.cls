@@ -70,20 +70,4 @@ public with sharing class OutletTriggerHelperTest {
         update rec;
         test.stopTest(); 
     }
-    
-    /*static testMethod void createRelatedAccountTest(){
-        Outlet__c rec2= [SELECT id, name, Outlet_Name__c FROM Outlet__c WHERE name='123456' LIMIT 1]; 
-        Account acc= [SELECT id, name FROM account where Outlet__c =: rec2.id]; 
-        //system.debug(acc);
-       // acc.Outlet_ID__c = '1234567';
-        test.startTest(); 
-        rec2.Outlet_Name__c = 'New Outlet Test';
-        update rec2;
-        test.stopTest(); 
-
-        Outlet__c outlet = [SELECT id, name, Outlet_Name__c FROM Outlet__c WHERE name='123456' LIMIT 1]; 
-
-        System.assertEquals(rec2.Outlet_Name__c.toUpperCase(), outlet.Outlet_Name__c);
-    }*/
-    
 }
