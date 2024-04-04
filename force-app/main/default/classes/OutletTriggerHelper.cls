@@ -7,7 +7,6 @@ public with sharing class OutletTriggerHelper {
 
         System.debug('Running Outlet before insert trigger.');
         List<Default_Account_Owner__c> outletOwner = Default_Account_Owner__c.getAll().values();
-        System.debug('newMap: ' + newOutlets);
         String outletOwnerId = outletOwner[0].OwnerId__c;
         for(Outlet__c outlet : newOutlets) {
             system.debug('Outlet: ' + outlet);
@@ -30,6 +29,8 @@ public with sharing class OutletTriggerHelper {
     }
 
     public static void updateRelatedStore(Map<Id, Outlet__c> newMap, Map<Id, Outlet__c> oldMap) {
+
+        System.debug('Running Outlet after update trigger');
 
         Id accountId = getParentAccount();
 
@@ -186,16 +187,25 @@ public with sharing class OutletTriggerHelper {
         if (storesToUpdate.size() > 0) {
             System.debug('Stores To Update = ' + storesToUpdate.size());
             Database.SaveResult[] updatedStoreResults = Database.update(storesToUpdate, false);
+            Database.SaveResult[] updatedAccountResults = Database.update(accountsToUpdate, false);
         }
         if (storesToInsert.size() > 0) {
             System.debug('Stores to Insert = ' + storesToInsert.size());
             Database.SaveResult[] insertStoreResults = Database.insert(storesToInsert, false);
+            Database.SaveResult[] insertAccountResults = Database.insert(accountsToInsert, false);
         }
     }
 
     public static void insertRelatedStore(Map<Id, Outlet__c> newMap) {
 
+        System.debug('Running Outlet after insert trigger');
+
         List<RetailStore> storesToInsert = new List<RetailStore>();
+        List<Account> accountsToInsert = new List<Account>();
+        List<String> stateIds = new List<String>();
+        List<String> categoryIds = new List<String>();
+        Map<String,Id> mapStates = new Map<String,Id>();
+        Map<String,id> mapCategories = new Map<String,Id>();
         Map<String, Id> mapChannelToId = new Map<String, Id>();
         Id accountId = getParentAccount();
 
@@ -204,11 +214,43 @@ public with sharing class OutletTriggerHelper {
         }
 
         for (Outlet__c outlet : newMap.values()) {
+            stateIds.add(outlet.State_ID__c);
+            categoryIds.add(outlet.Outlet_Category_Id__c);
+        }
+ 
+        for (State__c state : [SELECT Id, State_ID__c FROM State__c WHERE State_ID__c IN :stateIds]) {
+            mapStates.put(state.State_ID__c, state.Id);
+        }
+
+        for (Outlet_Category__c category : [SELECT Id, Outlet_Category_Id__c FROM Outlet_Category__c WHERE Outlet_Category_Id__c IN :categoryIds]) {
+            mapCategories.put(category.Outlet_Category_Id__c, category.Id);
+        }
+
+        for (Outlet__c outlet : newMap.values()) {
             RetailStore newStore = createNewStore(outlet, accountId, mapChannelToId);
             storesToInsert.add(newStore);
+            Account newAccount = createNewAccount(outlet, mapCategories, mapStates);
+            accountsToInsert.add(newAccount);
         }
 
         Database.SaveResult[] newStoreResults = Database.insert(storesToInsert, false);
+        Database.SaveResult[] newAccountResults = Database.insert(accountsToInsert, false);
+
+        for (Database.SaveResult sr : newStoreResults) {
+            if (!sr.isSuccess()) {
+                for (Database.Error err : sr.getErrors()) {
+                    System.debug(' New Store Error: ' + err.getMessage());
+                }
+            }
+        }
+        for (Database.SaveResult sr : newAccountResults) {
+            if (!sr.isSuccess()) {
+                for (Database.Error err : sr.getErrors()) {
+                    System.debug(' New Account Error: ' + err.getMessage());
+                }
+            }
+        }
+
     }
 
     private Static RetailStore createNewStore(Outlet__c outlet, Id parentId, Map<String,Id> mapGroup) {

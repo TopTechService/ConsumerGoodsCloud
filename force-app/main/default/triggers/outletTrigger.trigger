@@ -1,11 +1,8 @@
 //  Modified by daniel.peaper@viseo.com with the implementation of Consumer Goods Cloud
 
-trigger outletTrigger on Outlet__c ( after update, before insert, after insert) {
+trigger outletTrigger on Outlet__c ( after update, before insert, after insert, before update) {
 
     if (TriggerControl.isOutletTriggerFired) return;
-
-    TriggerControl.isStoreTriggerFired = true;
-
 
     if (Trigger.isBefore) {
         if (Trigger.isInsert) {
@@ -20,6 +17,6 @@ trigger outletTrigger on Outlet__c ( after update, before insert, after insert) 
         } else if (Trigger.isInsert) {
             OutletTriggerHelper.insertRelatedStore(Trigger.newMap);
         }
+        TriggerControl.isOutletTriggerFired = true;
     }
-    TriggerControl.isOutletTriggerFired = true;
 }
